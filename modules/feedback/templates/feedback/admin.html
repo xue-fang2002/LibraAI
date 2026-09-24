@@ -1,0 +1,40 @@
+{% extends "layout_base.html" %}
+{% block page_title %}反馈管理{% endblock %}
+{% block content %}
+<div class="feedback-page">
+  <div class="fb-header">
+    <h2>🛠 反馈管理</h2>
+    <a href="{{ url_for('feedback.index') }}" class="fb-btn">← 返回我的反馈</a>
+  </div>
+
+  <div class="fb-filters">
+    <select id="fbFilterStatus" class="fb-select">
+      <option value="">全部状态</option>
+      <option value="pending">待处理</option>
+      <option value="acknowledged">已受理</option>
+      <option value="in_progress">处理中</option>
+      <option value="resolved">已解决</option>
+      <option value="closed">已关闭</option>
+    </select>
+    <select id="fbFilterType" class="fb-select">
+      <option value="">全部类型</option>
+      <option value="bug">🐞 问题</option>
+      <option value="suggestion">💡 建议</option>
+      <option value="idea">✨ 想法</option>
+    </select>
+    <select id="fbFilterModule" class="fb-select">
+      <option value="">全部模块</option>
+      <option value="图书馆">图书馆</option>
+      <option value="图表工具">图表工具</option>
+      <option value="配置中心">配置中心</option>
+      <option value="AI问答">AI问答</option>
+      <option value="经验社区">经验社区</option>
+      <option value="办公工具">办公工具</option>
+      <option value="工具箱">工具箱</option>
+      <option value="其他">其他</option>
+    </select>
+  </div>
+
+  <div id="fbAdminList" class="fb-list">加载中…</div>
+</div>
+{% endblock %}

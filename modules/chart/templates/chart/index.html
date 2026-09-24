@@ -1,0 +1,185 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}图表工具 - 上传数据并可视化{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('chart.static', filename='css/chart.css') }}">
+{% if request.args.get('hub') == '1' %}
+{# 从工具箱 Hub 进入：仅附加返回按钮样式，不影响图表自身任何样式 #}
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox_hub/hub.css') }}">
+{% endif %}
+<style>
+    /* 页面级布局：占满主内容区，内部不随外层滚动 */
+    .chart-page { height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+    /* 工具栏（固定在顶部，不收缩，与页面背景融合） */
+    .ct-toolbar {
+        flex: 0 0 auto;
+        display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        padding: 12px 16px;
+    }
+    .ct-toolbar .ct-title { font-size: 16px; font-weight: 600; color: var(--text-primary, #1f2937); margin-right: 4px; }
+    /* 大类标签容器（新拟态样式见 chart.css） */
+    .ct-cats { display: flex; flex-wrap: wrap; gap: 10px; }
+    /* 图表展示区（占满剩余高度，内部由左/右两栏各自滚动） */
+    .ct-chart-wrap {
+        flex: 1 1 auto; min-height: 0; position: relative;
+        padding: 12px 16px; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .ct-empty {
+        position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+        flex-direction: column; gap: 8px; color: var(--text-secondary, #6b7280);
+        font-size: 14px; text-align: center; padding: 20px;
+    }
+    .ct-empty .ct-empty-icon { font-size: 42px; opacity: .6; }
+    /* 底部可折叠配置/预览面板 */
+    .ct-config { flex: 0 0 auto; border-top: 1px solid var(--border-color, #e3e3e3); background: var(--bg-secondary, #f8f9fa); }
+    .ct-config-head {
+        display: flex; align-items: center; gap: 12px; padding: 8px 16px; cursor: pointer;
+        user-select: none; color: var(--text-primary, #1f2937); font-size: 13px; font-weight: 600;
+    }
+    .ct-config-head .ct-caret { transition: transform .2s ease; }
+    .ct-config.collapsed .ct-caret { transform: rotate(-90deg); }
+    .ct-config-body { display: flex; gap: 18px; flex-wrap: wrap; padding: 4px 16px 14px; }
+    .ct-config.collapsed .ct-config-body { display: none; }
+    .ct-field { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-primary, #333); }
+    .ct-field select {
+        padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-color, #d0d5dd);
+        background: var(--bg-input, #fff); color: var(--text-primary, #333); max-width: 180px;
+    }
+    /* Y 轴多选 chips */
+    .ct-ychips { display: flex; flex-wrap: wrap; gap: 5px; max-width: 520px; }
+    .ct-ychip {
+        border: 1px solid var(--border-color, #d0d5dd); background: var(--bg-input, #fff);
+        color: var(--text-primary, #333); border-radius: 999px; padding: 3px 10px; cursor: pointer; font-size: 12px;
+    }
+    .ct-ychip.on { background: var(--theme-primary, #2f6df6); border-color: var(--theme-primary, #2f6df6); color: #fff; }
+    body.dark .ct-ychip { background: rgba(255,255,255,0.05); }
+    .ct-fname { font-size: 12px; color: var(--text-secondary, #6b7280); }
+    /* 预览表 */
+    .ct-preview { width: 100%; max-height: 220px; overflow: auto; border: 1px solid var(--border-color, #dee2e6); border-radius: 6px; }
+    .ct-preview table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .ct-preview th, .ct-preview td { border: 1px solid var(--border-color, #dee2e6); padding: 3px 8px; text-align: left; white-space: nowrap; color: var(--text-primary, #333); }
+    .ct-preview th { background: var(--bg-table-header, #f1f3f5); position: sticky; top: 0; z-index: 2; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bm-ws chart-page">
+    {% if request.args.get('hub') == '1' %}
+    {# 从工具箱 Hub 进入：最上面一行独立放返回按钮，风格与其他模块一致 #}
+    {% set raw_back = request.args.get('back') or '' %}
+    {% set hub_back = raw_back if raw_back.startswith('/') and not raw_back.startswith('//') else '/tools' %}
+    <div style="flex:0 0 auto;padding:12px 16px 0;">
+        <a class="hub-back" style="margin:0;" href="{{ hub_back }}">‹ 返回工具箱</a>
+    </div>
+    {% endif %}
+    <!-- 顶部工具栏 -->
+    <div class="ct-toolbar">
+        <span class="ct-title">📊 图表工具</span>
+        <button type="button" id="uploadBtn" class="ct-type">📤 上传文件</button>
+        <button type="button" id="aiChartBtn" class="ct-type ct-type-ai">🤖 AI 出图</button>
+        <div class="ct-cats" id="catBar">
+            <button type="button" class="ct-cat active" data-cat="bar">柱形类</button>
+            <button type="button" class="ct-cat" data-cat="line">折线类</button>
+            <button type="button" class="ct-cat" data-cat="pie">饼环类</button>
+            <button type="button" class="ct-cat" data-cat="rel">关系分布类</button>
+            <button type="button" class="ct-cat" data-cat="stat">统计科研</button>
+        </div>
+    </div>
+
+    <!-- 图表展示区（左侧缩略图列表 + 右侧主预览，WPS 式） -->
+    <div class="ct-chart-wrap">
+        <div class="ct-filterbar" id="filterBar"></div>
+        <div class="ct-main">
+            <!-- 左侧：当前大类所有风格变体缩略图 -->
+            <div class="ct-sublist" id="subList"></div>
+            <!-- 右侧：主预览 -->
+            <div class="ct-preview-pane" id="previewPane">
+                <div class="ct-preview-head">
+                    <span class="ct-preview-title" id="previewTitle">请选择左侧样式</span>
+                    <div class="ct-toggles">
+                        <label class="ct-switch"><input type="checkbox" id="labelToggle"> 显示数值</label>
+                        <label class="ct-switch"><input type="checkbox" id="tableToggle" checked> 数据表</label>
+                    </div>
+                    <div class="ct-preview-tools" id="previewTools">
+                        <button type="button" class="ct-tool" data-act="png" title="下载 PNG">下载</button>
+                        <button type="button" class="ct-tool" data-act="copy" title="复制图片到剪贴板">复制</button>
+                        <button type="button" class="ct-tool" data-act="csv" title="下载当前图表数据 CSV">数据</button>
+                        <button type="button" class="ct-tool" data-act="full" title="全屏查看">全屏</button>
+                    </div>
+                </div>
+                <div class="ct-preview-canvas" id="previewCanvas"></div>
+                <div class="ct-maintable" id="mainTable" style="display:none;"></div>
+            </div>
+        </div>
+        <div id="chartEmpty" class="ct-empty">
+            <div class="ct-empty-icon">📁</div>
+            <div>请先上传 Excel / CSV 文件，选择列后自动生成图表</div>
+            <div style="font-size:12px;opacity:.8;">点击左上角「📤 上传文件」开始</div>
+        </div>
+    </div>
+
+    <!-- 底部可折叠配置/预览 -->
+    <div class="ct-config" id="configPanel">
+        <div class="ct-config-head" id="configToggle">
+            <span class="ct-caret">▾</span><span>数据与配置</span>
+            <span class="ct-fname" id="fileName"></span>
+        </div>
+        <div class="ct-config-body">
+            <div class="ct-field">
+                <label>X 轴（类别/维度）：</label>
+                <select id="xAxisSelect"></select>
+            </div>
+            <div class="ct-field" style="align-items:flex-start;">
+                <label style="margin-top:4px;">Y 轴（数值/度量，可多选）：</label>
+                <div class="ct-ychips" id="yChips"></div>
+            </div>
+            <div class="ct-preview" id="previewBox" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- 上传弹窗 -->
+    <div class="modal-mask" id="uploadModal">
+        <div class="modal">
+            <h3>上传数据文件</h3>
+            <div class="ct-drop" id="dropZone">
+                <div style="font-size:34px;">📥</div>
+                <p>拖拽文件到此处，或 <button type="button" id="pickFile" class="ct-link">选择文件</button></p>
+                <p class="ct-muted">支持 .xlsx .xls .csv，最大 10MB</p>
+                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" hidden>
+            </div>
+            <div class="ct-drop-info" id="dropInfo" style="display:none;"></div>
+            <div class="modal-actions">
+                <button type="button" id="cancelUpload" class="ct-btn-ghost">取消</button>
+                <button type="button" id="confirmUpload" class="ct-btn-primary" disabled>上传并生成</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 出图抽屉（独立通道，与 ECharts 手动工具并列但不耦合） -->
+    <div class="ct-ai-dock" id="aiDock" aria-hidden="true">
+        <div class="ct-ai-head">
+            <span class="ct-ai-title">🤖 AI 出图</span>
+            <button type="button" id="aiClose" class="ct-ai-x" title="关闭">×</button>
+        </div>
+        <p class="ct-ai-hint">用自然语言描述，例如：「画一个各部门人数的柱状图，研发 20、市场 15、销售 30」</p>
+        <textarea id="aiText" class="ct-ai-text" placeholder="输入图表描述…"></textarea>
+        <button type="button" id="aiGen" class="ct-ai-gen">生成图表</button>
+        <div class="ct-ai-status" id="aiStatus"></div>
+        <div class="ct-ai-spec" id="aiSpec" style="display:none;"></div>
+        <div class="ct-ai-imgwrap" id="aiImgWrap" style="display:none;">
+            <img id="aiImg" class="ct-ai-img" alt="AI 图表">
+            <a id="aiDl" class="ct-ai-dl" download="ai-chart.png">⬇ 下载 PNG</a>
+        </div>
+    </div>
+    <div class="ct-ai-mask" id="aiMask" style="display:none;"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 本地化的 ECharts（不再依赖外部 CDN，内网友好） -->
+<script src="{{ url_for('chart.static', filename='js/echarts.min.js') }}"></script>
+<script src="{{ url_for('chart.static', filename='js/echarts-gl.min.js') }}"></script>
+<script src="{{ url_for('chart.static', filename='js/chart.js') }}"></script>
+<script src="{{ url_for('chart.static', filename='js/ai_chart.js') }}"></script>
+{% endblock %}

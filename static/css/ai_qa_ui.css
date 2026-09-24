@@ -1,0 +1,100 @@
+/* ============================================================
+   AI 问答「思考态」共享 UI
+   适用：首页 AI 问答 / 图书详情页提问 / 经验社区「问问社区」
+
+   三处问答面共用同一套视觉，改一处即全局生效。
+   依赖主题变量 --theme-primary / --theme-glow-soft / --theme-glow-mid
+   （由 body[data-light-theme=...] 定义），因此自动跟随 5 套明亮主题与暗色。
+
+   注意：动画一律挂在伪元素或子元素上，不挂在按钮本体的 transform ——
+   因为 .clay-btn-icon:disabled { transform: none !important } 的
+   !important 优先级高于 CSS animation，会把按钮自身的动画压掉。
+   ============================================================ */
+
+/* ---------- 动画 ---------- */
+@keyframes ai-spin { to { transform: rotate(360deg); } }
+@keyframes ai-dot {
+    0%, 100% { opacity: 0.3; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-2px); }
+}
+@keyframes ai-halo {
+    0% { box-shadow: 0 0 0 0 var(--theme-glow-mid, rgba(109, 93, 252, 0.45)); opacity: 1; }
+    100% { box-shadow: 0 0 0 12px rgba(0, 0, 0, 0); opacity: 0; }
+}
+
+/* ---------- 回答区「思考中」提示 ---------- */
+.ai-thinking {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 11px 13px;
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--text-muted, rgba(80, 90, 115, 0.75));
+    background: var(--ai-think-bg, rgba(128, 140, 170, 0.10));
+    box-shadow: var(--ai-think-shadow, 0 1px 3px rgba(30, 40, 70, 0.06));
+}
+/* 旋转法阵 */
+.ai-think-orb {
+    flex: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0deg, var(--theme-primary, #6d5dfc) 320deg, transparent 360deg);
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+    animation: ai-spin 0.9s linear infinite;
+}
+.ai-think-text { letter-spacing: 0.02em; }
+/* 呼吸点 */
+.ai-think-dots { display: inline-flex; gap: 3px; align-items: flex-end; }
+.ai-think-dots i {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--theme-primary, #6d5dfc);
+    opacity: 0.3;
+    animation: ai-dot 1.2s ease-in-out infinite;
+}
+.ai-think-dots i:nth-child(2) { animation-delay: 0.18s; }
+.ai-think-dots i:nth-child(3) { animation-delay: 0.36s; }
+
+/* ---------- 发送按钮「玄幻思考态」（通用，可加在任意按钮上） ---------- */
+.ai-think-btn {
+    position: relative;
+    z-index: 0;            /* 建立层叠上下文，使 ::after 的 z-index:-1 停在按钮背景之上、文字之下 */
+    overflow: visible;
+}
+/* 主题色光晕（保留 ::after 脉冲，仅去掉旋转，见上方注释） */
+/* 灵气扩散脉冲 */
+.ai-think-btn.is-thinking::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    z-index: -1;
+    border-radius: 14px;
+    box-shadow: 0 0 0 0 var(--theme-glow-mid, rgba(109, 93, 252, 0.45));
+    animation: ai-halo 1.8s ease-out infinite;
+    pointer-events: none;
+}
+/* 覆盖 :disabled 的灰化 —— 思考态要「亮」起来 */
+.ai-think-btn.is-thinking,
+.ai-think-btn.is-thinking:disabled {
+    opacity: 1;
+    cursor: progress;
+    color: var(--theme-primary, #6d5dfc);
+}
+
+/* ---------- 按钮图标：➤ ⇄ 旋转法阵（仅带 glyph 结构的按钮使用） ---------- */
+.ai-think-btn .ai-btn-glyph {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    line-height: 1;
+}
+.ai-think-btn .ai-btn-glyph-send { font-size: 16px; }
+.ai-think-btn .ai-btn-glyph-think { display: none; }

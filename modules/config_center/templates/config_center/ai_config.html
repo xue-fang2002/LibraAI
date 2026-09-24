@@ -1,0 +1,1071 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}AI 配置 · 配置中心{% endblock %}
+
+{% block extra_css %}
+<style>
+.bm-ws {
+    min-height: 100%; background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ef 100%);
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    color: #1f2937; display: flex; flex-direction: column; overflow-y: auto;
+}
+.header-top {
+    background: linear-gradient(90deg, #2A4365, #335788); color: #fff;
+    padding: 14px 24px; font-size: 18px; font-weight: bold;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.back-btn {
+    background: #fff; color: #2A4365; padding: 6px 16px;
+    text-decoration: none; border-radius: 6px; font-size: 14px;
+    font-weight: normal; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all 0.2s ease;
+}
+.back-btn:hover { background: #f0f4f8; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.20); }
+.ai-container { max-width: 1200px; width: 100%; margin: 0 auto; padding: 20px; }
+
+/* ===== 总览 KPI ===== */
+.kpi-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:16px; }
+.kpi-card {
+    background:#fff; border-radius:8px; padding:14px 16px;
+    box-shadow: 0 2px 8px rgba(42,67,101,0.08);
+    display:flex; align-items:center; gap:12px;
+}
+.kpi-card .kpi-icon { width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff; flex-shrink:0; }
+.kpi-card .kpi-label { font-size:12px; color:#6b7785; }
+.kpi-card .kpi-value { font-size:18px; font-weight:700; color:#2A4365; }
+.kpi-card.c1 .kpi-icon { background: linear-gradient(135deg,#4a6b9c,#2A4365); }
+.kpi-card.c2 .kpi-icon { background: linear-gradient(135deg,#5a9c8a,#2e7d65); }
+.kpi-card.c3 .kpi-icon { background: linear-gradient(135deg,#b06b9c,#7d3e75); }
+.kpi-card.c4 .kpi-icon { background: linear-gradient(135deg,#c98c4a,#a3651f); }
+.kpi-card .status-ok { color:#27ae60; } .kpi-card .status-bad { color:#e74c3c; }
+
+/* ===== 通用卡片 ===== */
+.card { background:#fff; border-radius:8px; padding:16px 18px; margin-bottom:14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card h3 { color:#2A4365; font-size:15px; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+
+/* ===== 选择性索引（三级分类勾选树） ===== */
+.sel-head { cursor:pointer; user-select:none; }
+.sel-head:hover { opacity:.82; }
+.sel-arrow { display:inline-block; font-size:11px; color:#6b7785; transition:transform .2s ease; }
+.sel-arrow.open { transform: rotate(90deg); }
+.sel-toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid #eee; }
+.sel-search { flex:1; min-width:170px; padding:6px 10px; border:1px solid #d8dee6; border-radius:5px; font-size:13px; outline:none; }
+.sel-search:focus { border-color:#2A4365; }
+.sel-mini-btn { padding:5px 11px; border:1px solid #d8dee6; background:#fff; color:#2A4365; border-radius:5px; font-size:12px; cursor:pointer; }
+.sel-mini-btn:hover { background:#eef3f9; }
+.sel-tree { max-height:330px; overflow-y:auto; border:1px solid #eee; border-radius:5px; padding:6px 4px; }
+.sel-node { display:flex; align-items:center; gap:7px; padding:3px 6px; border-radius:4px; font-size:13px; cursor:pointer; }
+.sel-node:hover { background:#f2f6fb; }
+.sel-node input[type=checkbox] { cursor:pointer; margin:0; }
+.sel-node .sel-arrow { cursor:pointer; width:14px; text-align:center; flex-shrink:0; transition:transform .2s ease; }
+.sel-node .sel-arrow.open { transform: rotate(90deg); }
+.sel-node .sel-arrow:hover { color:#2A4365; }
+.sel-lvl1 { font-weight:600; color:#2A4365; }
+.sel-lvl2 { padding-left:22px; color:#3d4f66; }
+.sel-book { padding-left:44px; color:#444; font-weight:normal; }
+.sel-count { font-size:11px; color:#8a94a6; }
+.sel-badge { font-size:10px; padding:1px 6px; border-radius:8px; margin-left:2px; }
+.sel-badge.done { background:#e6f6ec; color:#1e8449; }
+.sel-badge.todo { background:#fdf2e3; color:#a3651f; }
+.sel-empty { padding:18px; text-align:center; color:#8a94a6; font-size:13px; }
+.sel-foot { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; padding-top:10px; border-top:1px solid #eee; flex-wrap:wrap; }
+.sel-sum { font-size:13px; color:#444; }
+.sel-sum b { color:#2A4365; }
+
+/* ===== 表格 ===== */
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:#2A4365; color:#fff; padding:7px 10px; text-align:center; position:sticky; top:0; }
+td { padding:6px 10px; text-align:center; border-bottom:1px solid #eee; word-break:break-all; }
+tbody tr:hover { background:#e8f0f8; }
+.table-box { max-height:280px; overflow-y:auto; border:1px solid #eee; border-radius:4px; }
+
+/* ===== 维护按钮 ===== */
+.action-row { display:flex; flex-wrap:wrap; gap:8px; }
+.action-btn {
+    padding:8px 14px; border-radius:5px; cursor:pointer; font-size:13px;
+    border:1px solid transparent; display:inline-flex; align-items:center; gap:5px;
+    background:#2A4365; color:#fff; transition: all 0.2s ease;
+}
+.action-btn:hover { opacity:0.88; }
+.action-btn.warn { background:#e67e22; }
+.action-btn.danger { background:#e74c3c; }
+.action-btn.success { background:#27ae60; }
+.action-btn:disabled { background:#aaa; cursor:not-allowed; }
+
+/* ===== 资源卡片 ===== */
+.res-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:10px; }
+.res-card { background: #f7f9fc; border: 1px solid #e0e8f2; border-radius: 6px; padding: 10px 12px; }
+.res-card .res-name { font-weight: 600; color: #2A4365; margin-bottom: 4px; font-size: 13px; display:flex; align-items:center; gap:6px; }
+.res-card .res-path { font-family: monospace; font-size: 11px; color: #888; word-break: break-all; margin-bottom: 4px; }
+.res-card .res-info { font-size: 12px; color: #555; display:flex; gap:10px; flex-wrap:wrap; }
+.res-card .res-info b { color: #2A4365; }
+.res-card.ok { border-left: 3px solid #27ae60; }
+.res-card.miss { border-left: 3px solid #e74c3c; background:#fdf2f2; }
+
+/* ===== 模式徽章 ===== */
+.mode-badge { padding:5px 14px; border-radius:4px; font-size:13px; color:#fff; display:inline-block; }
+.mode-off { background:#95a5a6; }
+.mode-light { background:#f39c12; }
+.mode-full { background:#27ae60; }
+
+/* ===== 配置预览 ===== */
+pre.config-view {
+    background:#1e2533; color:#e6edf3; padding:12px; border-radius:5px;
+    font-size:11px; line-height:1.45; max-height:300px; overflow:auto;
+    font-family: "Cascadia Code", Consolas, monospace;
+}
+details.config-block { margin-top:8px; }
+details.config-block summary {
+    cursor:pointer; padding:8px 12px; background:#f0f4f8; border-radius:4px;
+    color:#2A4365; font-weight:600; font-size:13px;
+}
+details.config-block[open] summary { border-bottom-left-radius:0; border-bottom-right-radius:0; }
+.tip { color:#888; font-size:11px; margin-top:6px; }
+
+/* ===== 功能开关 ===== */
+.feature-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:10px; }
+.feature-item { background:#f0f4f8; padding:10px 12px; border-radius:6px; font-size:13px; }
+.feature-item .feat-name { font-weight:600; color:#2A4365; margin-bottom:4px; }
+.feature-item .feat-desc { font-size:11px; color:#777; }
+.feature-item.on { background:#e6f7ec; border-left:3px solid #27ae60; }
+.feature-item.off { background:#faf0f0; border-left:3px solid #ccc; }
+
+/* ===== 任务状态 ===== */
+.task-status { padding:2px 8px; border-radius:3px; font-size:11px; color:#fff; }
+.ts-pending { background:#f39c12; } .ts-running { background:#3498db; }
+.ts-done { background:#27ae60; } .ts-failed { background:#e74c3c; }
+
+/* ===== 模式单选 ===== */
+.mode-radio-group { display:flex; gap:10px; flex-wrap:wrap; }
+.mode-radio {
+    position:relative; flex:1; min-width:120px; cursor:pointer;
+}
+.mode-radio input { position:absolute; opacity:0; }
+.mode-radio .mr-label {
+    display:block; padding:12px 14px; border:2px solid #e0e8f2; border-radius:8px;
+    text-align:center; transition:all .18s ease; background:#f7f9fc;
+}
+.mode-radio .mr-label .mr-title { font-weight:700; color:#2A4365; font-size:14px; }
+.mode-radio .mr-label .mr-desc { font-size:11px; color:#888; margin-top:3px; }
+.mode-radio input:checked + .mr-label { border-color:#2A4365; background:#eef3fa; box-shadow:0 2px 8px rgba(42,67,101,.12); }
+.mode-radio input:checked + .mr-label .mr-title { color:#1f4e8c; }
+
+/* ===== 开关 ===== */
+.switch-row { display:flex; align-items:center; justify-content:space-between; padding:10px 0; }
+.switch-row .sw-label { font-size:14px; color:#334; }
+.switch-row .sw-desc { font-size:11px; color:#999; margin-top:2px; }
+.switch { position:relative; width:50px; height:26px; flex-shrink:0; }
+.switch input { opacity:0; width:0; height:0; }
+.slider { position:absolute; inset:0; background:#ccc; border-radius:26px; transition:.25s; cursor:pointer; }
+.slider:before { content:""; position:absolute; height:20px; width:20px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.25s; }
+.switch input:checked + .slider { background:#27ae60; }
+.switch input:checked + .slider:before { transform:translateX(24px); }
+
+/* ===== 表单 ===== */
+.form-row { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.form-row label { width:120px; font-size:13px; color:#445; flex-shrink:0; }
+.form-row input, .form-row select {
+    flex:1; padding:8px 10px; border:1px solid #cfd8e3; border-radius:6px; font-size:13px;
+    outline:none; transition:border .15s;
+}
+.form-row input:focus, .form-row select:focus { border-color:#2A4365; }
+.backend-panel { background:#f7f9fc; border:1px solid #e0e8f2; border-radius:8px; padding:14px; margin-top:10px; }
+.backend-panel.hidden { display:none; }
+.dep-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px; }
+.dep-item { display:flex; align-items:center; gap:8px; font-size:13px; padding:8px 10px; background:#f7f9fc; border-radius:6px; }
+.dep-item .dep-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.dep-item.ok .dep-dot { background:#27ae60; } .dep-item.no .dep-dot { background:#e74c3c; }
+.dep-item .dep-name { font-family:monospace; font-weight:600; color:#2A4365; }
+.dep-item .dep-desc { font-size:11px; color:#888; }
+
+/* ===== Toast ===== */
+.toast { position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 5px;
+    color: white; font-size: 14px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    opacity:0; transform: translateY(20px); transition: all 0.3s ease;
+}
+.toast.show { opacity:1; transform: translateY(0); }
+.toast.success { background:#27ae60; }
+.toast.error { background:#e74c3c; }
+.toast.info { background:#3498db; }
+
+/* ===== 加载遮罩（与用户管理页一致，复用 #2A4365 配色，不改 UI 风格） ===== */
+.um-loading-overlay { position: fixed; left:0; top:0; width:100%; height:100%;
+    background: rgba(42,67,101,0.30); display:none; align-items:center; justify-content:center; z-index:10000; }
+.um-loading-overlay.show { display:flex; }
+.um-loading-box { background:#fff; border-radius:8px; padding:22px 30px; display:flex; flex-direction:column; align-items:center; gap:12px;
+    box-shadow:0 6px 24px rgba(0,0,0,0.20); }
+.um-spinner { width:34px; height:34px; border:4px solid #cdd6e3; border-top-color:#2A4365; border-radius:50%; animation: umspin .8s linear infinite; }
+@keyframes umspin { to { transform: rotate(360deg); } }
+.um-loading-text { color:#2A4365; font-size:14px; font-weight:600; }
+
+/* ===== embed 模式（被配置中心 tab 用 iframe 嵌入）：只显示主内容，隐藏整页 sidebar / 顶部栏 ===== */
+/* 注意：保留原滚动架构（container-wrap flex 100dvh + main-content flex:1 内部滚动），
+   只藏侧边栏。不要动 display/height/overflow，否则滚动容器被拆掉、内容被 body overflow:hidden 裁掉无法滚动。 */
+{% set _is_embed = request.args.get('embed') %}
+{% if _is_embed %}
+.is-embed .sidebar, .is-embed .header-top { display: none !important; }
+.is-embed .container-wrap { display: flex !important; flex-direction: row !important; height: 100dvh !important; }
+.is-embed .main-content { flex: 1 1 auto !important; width: auto !important; border-left: none !important; }
+.is-embed .bm-ws { min-height: 0 !important; }
+{% endif %}
+</style>
+{% endblock %}
+
+{% block content %}
+{% set is_embed = request.args.get('embed') %}
+{% if is_embed %}<script>document.body.classList.add('is-embed');</script>{% endif %}
+<div class="bm-ws">
+    {% if not is_embed %}
+    <div class="header-top">
+        <span>🤖 AI 配置中心</span>
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="/config" class="back-btn">← 返回配置中心</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="ai-container">
+
+        <!-- 1. KPI 总览 -->
+        <div class="kpi-grid">
+            <div class="kpi-card c1">
+                <div class="kpi-icon">📦</div>
+                <div>
+                    <div class="kpi-label">AI 模块</div>
+                    <div class="kpi-value {% if ai_module_enabled %}status-ok{% else %}status-bad{% endif %}">
+                        {{ '已启用' if ai_module_enabled else '未启用' }}
+                    </div>
+                </div>
+            </div>
+            <div class="kpi-card c2">
+                <div class="kpi-icon">🎛️</div>
+                <div>
+                    <div class="kpi-label">运行模式</div>
+                    <div class="kpi-value">
+                        {% if ai_mode == 'off' %}关闭
+                        {% elif ai_mode == 'light' %}轻量
+                        {% else %}完整{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="kpi-card c3">
+                <div class="kpi-icon">⚙️</div>
+                <div>
+                    <div class="kpi-label">启用功能</div>
+                    <div class="kpi-value">
+                        {{ (1 if ai_features.summary else 0) + (1 if ai_features.vector_search else 0) + (1 if ai_features.qa else 0) + (1 if ai_features.rebuild else 0) }} / 4
+                    </div>
+                </div>
+            </div>
+            <div class="kpi-card c4">
+                <div class="kpi-icon">📜</div>
+                <div>
+                    <div class="kpi-label">AI 日志记录</div>
+                    <div class="kpi-value">{{ ai_log_total }} 条</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1.5 运行模式与涉密安全锁 -->
+        <div class="card">
+            <h3>🎛️ 运行模式（热切换，无需重启）</h3>
+            <div class="mode-radio-group">
+                <label class="mode-radio">
+                    <input type="radio" name="ai_mode" value="off" {% if ai_cfg.ai_mode == 'off' %}checked{% endif %}>
+                    <span class="mr-label"><span class="mr-title">关闭</span><span class="mr-desc">完全停用 AI</span></span>
+                </label>
+                <label class="mode-radio">
+                    <input type="radio" name="ai_mode" value="light" {% if ai_cfg.ai_mode == 'light' %}checked{% endif %}>
+                    <span class="mr-label"><span class="mr-title">轻量</span><span class="mr-desc">摘要 + 向量检索</span></span>
+                </label>
+                <label class="mode-radio">
+                    <input type="radio" name="ai_mode" value="full" {% if ai_cfg.ai_mode == 'full' %}checked{% endif %}>
+                    <span class="mr-label"><span class="mr-title">完整</span><span class="mr-desc">含本地大模型问答</span></span>
+                </label>
+            </div>
+            <div class="switch-row" style="margin-top:8px; border-top:1px solid #eee; padding-top:14px;">
+                <div>
+                    <div class="sw-label">🔒 涉密安全锁定</div>
+                    <div class="sw-desc">开启后，未授权用户无法在线阅读/下载正文（仅管理员可读）</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="securityLock" {% if ai_cfg.security_lock %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="action-row" style="margin-top:12px;">
+                <button class="action-btn success" onclick="saveAiMode()">💾 保存运行模式</button>
+                <button class="action-btn" onclick="saveSecurity()">🔒 保存安全锁</button>
+            </div>
+            <div class="tip">切换会立即写入 <code>config/modules.yaml</code> 并热加载，<b>无需重启服务</b>。</div>
+        </div>
+
+        <!-- 1.55 问答加速（可选步骤开关） -->
+        <div class="card">
+            <h3>⚡ 问答加速（可选步骤）</h3>
+            <div class="tip" style="margin:0 0 10px;">
+                实测端到端 ~38s，其中「二阶重排 ~18.5s」与「引用校验 ~12s」是大头。
+                下面每一步都可单独停用；全部开启即最高质量。保存后<b>立即生效，无需重启</b>。
+            </div>
+
+            <div class="switch-row">
+                <div>
+                    <div class="sw-label">🧪 HyDE 查询增强</div>
+                    <div class="sw-desc">先用模型生成一段假设答案再检索，提升短问题对长文档的召回；代价是每次问答多 1 次 LLM 调用（约 4s）</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="qaHyde" {% if qa_speed.hyde %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-row" style="border-top:1px solid #eee;">
+                <div>
+                    <div class="sw-label">🎯 二阶语义重排（rerank）</div>
+                    <div class="sw-desc">用 568M cross-encoder 对候选精排，修掉「语义最近却答非所问」；代价最大（CPU 上约 18.5s，GPU 上可降到 1s 内）</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="qaRerank" {% if qa_speed.rerank %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-row" style="border-top:1px solid #eee;">
+                <div>
+                    <div class="sw-label">🔎 引用校验（groundedness）</div>
+                    <div class="sw-desc">答完再让模型核对答案是否被资料支撑，防止编造；代价是第 2 次 LLM 调用（约 12s）</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="qaCitation" {% if qa_speed.citation_check %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="switch-row" style="border-top:1px solid #eee;">
+                <div>
+                    <div class="sw-label">⚡ 校验异步化</div>
+                    <div class="sw-desc">答案一生成就先给用户看，校验结果稍后以徽标补上（不省算力，但用户不用干等）</div>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="qaAsync" {% if qa_speed.grounding_async %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="form-row" style="margin-top:12px; border-top:1px solid #eee; padding-top:14px;">
+                <label>重排设备</label>
+                <select id="qaRerankDevice">
+                    <option value="auto" {% if qa_speed.rerank_device == 'auto' %}selected{% endif %}>auto（优先 GPU，不可用自动降级 CPU）</option>
+                    <option value="cuda" {% if qa_speed.rerank_device == 'cuda' %}selected{% endif %}>cuda（强制 GPU）</option>
+                    <option value="cpu" {% if qa_speed.rerank_device == 'cpu' %}selected{% endif %}>cpu（强制 CPU）</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label>重排候选数</label>
+                <input id="qaRerankCand" type="number" min="1" max="64" value="{{ qa_speed.rerank_max_candidates }}">
+            </div>
+            <div class="tip" id="qaCudaTip" style="margin-top:2px;">
+                {% if qa_cuda %}本机检测到 <b style="color:#27ae60;">CUDA 可用</b>，「auto」将跑在 GPU 上。{% else %}本机<b style="color:#e67e22;">未检测到 CUDA</b>（如为集成显卡），「auto」会落到 CPU，此时建议把候选数调到 12 左右。{% endif %}
+                重排耗时与该数近似线性。
+            </div>
+
+            <div class="action-row" style="margin-top:12px;">
+                <button class="action-btn success" onclick="saveQaSpeed()">💾 保存问答加速配置</button>
+                <button class="action-btn" onclick="presetQaSpeed('high')">🎯 高质量</button>
+                <button class="action-btn" onclick="presetQaSpeed('balanced')">⚖️ 均衡</button>
+            </div>
+            <div class="tip">
+                预设只是把上面开关一次性拨到对应组合，<b>仍需点「保存」</b>才会写入。
+                ⚠️ 改「重排设备」需<b>重启服务</b>才生效（模型加载后不会再迁移设备），其余开关即时生效。
+            </div>
+        </div>
+
+        <!-- 1.6 推理后端与模型路径 -->
+        <div class="card">
+            <h3>🧠 推理后端与模型配置</h3>
+            <div class="form-row">
+                <label>推理后端</label>
+                <select id="aiBackend" onchange="onBackendChange()">
+                    <option value="off" {% if ai_cfg.backend == 'off' %}selected{% endif %}>关闭（不启用推理）</option>
+                    <option value="llama_cpp" {% if ai_cfg.backend == 'llama_cpp' %}selected{% endif %}>llama.cpp（本地 GGUF 大模型）</option>
+                    <option value="ollama" {% if ai_cfg.backend == 'ollama' %}selected{% endif %}>Ollama（本地推理服务）</option>
+                    <option value="dashscope" {% if ai_cfg.backend == 'dashscope' %}selected{% endif %}>阿里云百炼 DashScope（云端 API）</option>
+                    <option value="vllm" {% if ai_cfg.backend == 'vllm' %}selected{% endif %}>vLLM（OpenAI 兼容推理服务）</option>
+                    <option value="transformers" {% if ai_cfg.backend == 'transformers' %}selected{% endif %}>Transformers（本地向量/推理）</option>
+                </select>
+            </div>
+
+            <!-- llama_cpp -->
+            <div class="backend-panel {% if ai_cfg.backend != 'llama_cpp' %}hidden{% endif %}" id="panel-llama_cpp">
+                <div class="form-row"><label>模型文件路径</label><input id="llama_model_path" value="{{ ai_cfg.model_paths.local_llm or '' }}" placeholder="models/qwen2.5-7b-instruct-q4_k_m.gguf"></div>
+            </div>
+            <!-- ollama -->
+            <div class="backend-panel {% if ai_cfg.backend != 'ollama' %}hidden{% endif %}" id="panel-ollama">
+                <div class="form-row"><label>服务地址</label><input id="ollama_url" value="{{ ai_cfg.ollama.url or 'http://localhost:11434' }}"></div>
+                <div class="form-row"><label>模型名</label><input id="ollama_model" value="{{ ai_cfg.ollama.model or 'qwen2.5:7b' }}"></div>
+            </div>
+            <!-- dashscope -->
+            <div class="backend-panel {% if ai_cfg.backend != 'dashscope' %}hidden{% endif %}" id="panel-dashscope">
+                <div class="form-row"><label>API 地址</label><input id="dash_url" value="{{ ai_cfg.dashscope.url or 'https://dashscope.aliyuncs.com/compatible-mode/v1' }}"></div>
+                <div class="form-row"><label>模型名</label><input id="dash_model" value="{{ ai_cfg.dashscope.model or 'qwen-plus' }}"></div>
+                <div class="form-row"><label>API Key</label><input id="dash_api_key" type="password" value="{{ ai_cfg.dashscope.api_key or '' }}" placeholder="sk-..."></div>
+            </div>
+            <!-- vllm -->
+            <div class="backend-panel {% if ai_cfg.backend != 'vllm' %}hidden{% endif %}" id="panel-vllm">
+                <div class="form-row"><label>服务地址</label><input id="vllm_url" value="{{ ai_cfg.vllm.url or 'http://localhost:8000/v1' }}"></div>
+                <div class="form-row"><label>模型名</label><input id="vllm_model" value="{{ ai_cfg.vllm.model or '' }}" placeholder="如 Qwen/Qwen2.5-7B-Instruct"></div>
+                <div class="form-row"><label>API Key（可选）</label><input id="vllm_api_key" type="password" value="{{ ai_cfg.vllm.api_key or '' }}" placeholder="留空表示不鉴权"></div>
+            </div>
+            <!-- transformers -->
+            <div class="backend-panel {% if ai_cfg.backend != 'transformers' %}hidden{% endif %}" id="panel-transformers">
+                <div class="form-row"><label>模型目录</label><input id="tf_model_path" value="{{ ai_cfg.transformers.model_path or 'models/' }}"></div>
+            </div>
+
+            <hr style="border:none;border-top:1px solid #eee;margin:14px 0;">
+            <h3 style="font-size:14px;margin-bottom:10px;">📂 模型路径（向量 / 大模型）</h3>
+            <div class="form-row"><label>轻量嵌入模型</label><input id="mp_light_emb" value="{{ ai_cfg.model_paths.light_emb or '' }}" placeholder="models/bge-small-zh-v1.5">{% if ai_model_status.light_emb and not ai_model_status.light_emb.exists %}<span style="color:#e74c3c;font-size:12px;">未找到</span>{% endif %}</div>
+            <div class="form-row"><label>完整嵌入模型</label><input id="mp_full_emb" value="{{ ai_cfg.model_paths.full_emb or '' }}" placeholder="models/bge-large-zh-v1.5">{% if ai_model_status.full_emb and not ai_model_status.full_emb.exists %}<span style="color:#e74c3c;font-size:12px;">未找到</span>{% endif %}</div>
+            <div class="form-row"><label>本地大模型</label><input id="mp_local_llm" value="{{ ai_cfg.model_paths.local_llm or '' }}" placeholder="models/qwen2.5-7b-instruct-q4_k_m.gguf">{% if ai_model_status.local_llm and not ai_model_status.local_llm.exists %}<span style="color:#e74c3c;font-size:12px;">未找到</span>{% endif %}</div>
+
+            <div class="action-row" style="margin-top:12px;">
+                <button class="action-btn success" onclick="saveBackend()">💾 保存后端配置</button>
+                <button class="action-btn" onclick="saveModelPaths()">📂 保存模型路径</button>
+            </div>
+            <div class="tip">后端与模型路径均写入 <code>modules.yaml</code> 的 ai_center 块；模型文件需自行放入 <code>BASE_DIR/models/</code> 目录。</div>
+        </div>
+
+        <!-- 1.7 依赖探测 -->
+        <div class="card">
+            <h3>🔧 运行环境依赖探测</h3>
+            <div class="dep-grid">
+                {% for d in ai_deps %}
+                <div class="dep-item {{ 'ok' if d.installed else 'no' }}">
+                    <span class="dep-dot"></span>
+                    <div>
+                        <div class="dep-name">{{ d.name }}</div>
+                        <div class="dep-desc">{{ '✅ 已安装' if d.installed else '❌ 缺失' }} · {{ d.desc }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="tip">灰色缺失项仅代表尚未安装对应 Python 库；选择对应后端前请确保依赖已就绪（如 <code>pip install llama-cpp-python openai</code>）。</div>
+        </div>
+
+        <!-- 2. 磁盘资源 -->
+        <div class="card">
+            <h3>💾 磁盘资源</h3>
+            <div class="res-grid">
+                {% for r in disk_resources %}
+                <div class="res-card {{ 'ok' if r.exists else 'miss' }}">
+                    <div class="res-name">
+                        {% if r.type == 'embedding' %}🧬{% elif r.type == 'llm' %}🧠{% elif r.type == 'vector_index' %}📊{% else %}📝{% endif %}
+                        {{ r.name }}
+                    </div>
+                    <div class="res-path">{{ r.rel_path }}</div>
+                    <div class="res-info">
+                        <span><b>状态：</b>{{ '✅ 已就绪' if r.exists else '❌ 缺失' }}</span>
+                        <span><b>大小：</b>{{ r.size_mb }} MB</span>
+                        {% if r.file_count %}
+                        <span><b>文件数：</b>{{ r.file_count }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="tip">资源路径取自 <code>BASE_DIR</code>，模型新增后请重启服务以使 <code>ai_interface</code> 重新发现模型。</div>
+        </div>
+
+        <!-- 3. 功能开关 -->
+        <div class="card">
+            <h3>🎚️ 功能开关</h3>
+            <div class="feature-grid">
+                <div class="feature-item {{ 'on' if ai_features.summary else 'off' }}">
+                    <div class="feat-name">📝 自动摘要 {{ '✅' if ai_features.summary else '❌' }}</div>
+                    <div class="feat-desc">AI 读取 PDF/文本后自动生成一段中文摘要，存入 ai_vector_store/summaries。</div>
+                </div>
+                <div class="feature-item {{ 'on' if ai_features.vector_search else 'off' }}">
+                    <div class="feat-name">🔍 语义检索 {{ '✅' if ai_features.vector_search else '❌' }}</div>
+                    <div class="feat-desc">基于 BGE 嵌入模型的 FAISS 索引，可按"意思"找到相关书籍。</div>
+                </div>
+                <div class="feature-item {{ 'on' if ai_features.qa else 'off' }}">
+                    <div class="feat-name">💬 智能问答 {{ '✅' if ai_features.qa else '❌' }}</div>
+                    <div class="feat-desc">读取多本书内容后用本地大模型回答用户问题（轻量 + 完整模式均支持）。</div>
+                </div>
+                <div class="feature-item {{ 'on' if ai_features.rebuild else 'off' }}">
+                    <div class="feat-name">🔄 索引重建 {{ '✅' if ai_features.rebuild else '❌' }}</div>
+                    <div class="feat-desc">上传/删除书籍后异步重建向量索引，避免数据库脏读。</div>
+                </div>
+            </div>
+            <div class="tip">功能开关通过 <code>config/app.yaml</code> 中 <code>ai_center</code> 块或 Python API 调整；详情查看下方"配置文件原文"。</div>
+        </div>
+
+        <!-- 4. 维护操作 -->
+        <div class="card">
+            <h3>🛠️ 维护操作</h3>
+            <div class="action-row">
+                {% if ai_module_enabled %}
+                <button class="action-btn success" onclick="doAction('rebuild_index')"
+                        title="只处理未索引、上次失败或文件有变更的书，已索引且未变的会跳过">🔄 索引新书（增量）</button>
+                <button class="action-btn" onclick="doAction('rebuild_index', {force: 1})"
+                        title="所有书推倒重来，耗时较长；仅在索引损坏或更改切片方式后使用">♻️ 全量重建</button>
+                <button class="action-btn warn" onclick="doAction('toggle_module', {enabled: false})">⛔ 禁用 AI 模块</button>
+                {% else %}
+                <button class="action-btn success" onclick="doAction('toggle_module', {enabled: true})">▶️ 启用 AI 模块</button>
+                <button class="action-btn" disabled title="需先启用 AI 模块">🔄 重建向量索引</button>
+                {% endif %}
+                <button class="action-btn danger" onclick="if(confirm('确定清空所有 AI 操作日志？'))doAction('clear_logs')">🗑️ 清空 AI 日志</button>
+                <button class="action-btn warn" onclick="if(confirm('确定清理孤儿/失效向量索引？'))doAction('compress_index')">🧹 压缩索引</button>
+            </div>
+            <div class="tip">启用/禁用 AI 模块会写入 <code>config/modules.yaml</code>，<b>修改后需重启服务</b>生效。</div>
+        </div>
+
+        <!-- 4.5 选择性索引（不影响上方全量/增量按钮） -->
+        <div class="card">
+            <h3 class="sel-head" onclick="toggleSel()" title="点击展开/收起">
+                <span class="sel-arrow" id="selArrow">▶</span> 📋 选择性索引
+                <span style="font-size:12px;font-weight:normal;color:#6b7785;margin-left:6px;">
+                    按一级 / 二级分类或单本勾选，只索引选中的文件
+                </span>
+            </h3>
+            <div id="selBody" style="display:none;">
+                <div class="sel-toolbar">
+                    <input type="text" class="sel-search" id="selSearch" placeholder="🔍 搜索书名 / 分类名…" oninput="renderSelTree()">
+                    <button type="button" class="sel-mini-btn" onclick="selAll(true)">全选</button>
+                    <button type="button" class="sel-mini-btn" onclick="selAll(false)">清空</button>
+                    <span class="sel-count" id="selCount">显示 0 本</span>
+                </div>
+                <div class="sel-tree" id="selTree"></div>
+                <div class="sel-foot">
+                    <span class="sel-sum">已选中 <b id="selPicked">0</b> 本</span>
+                    <button type="button" class="action-btn success" id="selIndexBtn" onclick="indexSelected()" disabled
+                            title="只重建勾选的文件，跳过摘要生成；与「索引新书/全量重建」互不影响">
+                        🚀 索引选中文件
+                    </button>
+                </div>
+                <div class="tip" style="margin-top:10px;">
+                    勾选「一级分类」= 该分类下全部文件；勾选「二级分类」= 该子类下全部文件；展开后可单独勾选某几本。
+                    三种粒度可混用，与上方的「索引新书 / 全量重建」互不影响。
+                    <br>💡 点击分类名称前的 <b>▶</b> 箭头（或点击分类行文字），可折叠 / 展开该分类——一级分类与二级分类均可独立折叠收起。
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. 向量索引统计 -->
+        {% if vector_stats %}
+        <div class="card">
+            <h3>📊 向量索引实时统计</h3>
+            <div style="display:flex;gap:24px;flex-wrap:wrap;font-size:13px;color:#555;">
+                {% for k, v in vector_stats.items() %}
+                <span><b style="color:#2A4365;">{{ k }}：</b>{{ v }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 6. 异步任务 -->
+        <div class="card">
+            <h3>📋 异步任务（最新 {{ ai_tasks|length }} 条）</h3>
+            <div class="table-box">
+                <table>
+                    <thead><tr><th>任务ID</th><th>类型</th><th>状态</th><th>进度</th><th>信息</th><th>更新时间</th></tr></thead>
+                    <tbody>
+                        {% for t in ai_tasks %}
+                        <tr>
+                            <td style="font-family:monospace;">{{ t.id[:16] }}...</td>
+                            <td>{{ t.task_type or t.type or '-' }}</td>
+                            <td>{% set st = t.status or '' %}
+                                {% if st in ['done','success'] %}<span class="task-status ts-done">完成</span>
+                                {% elif st == 'running' %}<span class="task-status ts-running">运行中</span>
+                                {% elif st in ['failed','error'] %}<span class="task-status ts-failed">失败</span>
+                                {% else %}<span class="task-status ts-pending">{{ st or '等待' }}</span>{% endif %}
+                            </td>
+                            <td>{{ t.progress or 0 }}%</td>
+                            <td style="max-width:280px;">{{ t.message or '-' }}</td>
+                            <td>{{ t.updated_at or t.created_at or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" style="padding:20px;color:#999;text-align:center;">暂无异步任务</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 7. AI 操作日志 -->
+        <div class="card">
+            <h3>📜 AI 操作日志（共 {{ ai_log_total }} 条）</h3>
+            <div class="table-box">
+                <table>
+                    <thead><tr><th>时间</th><th>用户</th><th>动作</th><th>模式</th><th>详情</th><th>IP</th></tr></thead>
+                    <tbody>
+                        {% for log in ai_logs %}
+                        <tr>
+                            <td>{{ log.created_at }}</td>
+                            <td>{{ log.user_name or log.user_account or '系统' }}</td>
+                            <td>{{ log.action }}</td>
+                            <td>{{ log.mode or '-' }}</td>
+                            <td style="max-width:300px;font-size:11px;color:#555;">{{ log.detail or '-' }}</td>
+                            <td style="font-size:11px;color:#888;">{{ log.ip or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" style="padding:20px;color:#999;text-align:center;">暂无 AI 操作日志</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="tip">完整历史日志位于数据库 <code>ai_logs</code> 表；本面板仅展示最近 50 条。</div>
+        </div>
+
+        <!-- 8. 配置文件原文（折叠） -->
+        <div class="card">
+            <h3>📄 配置文件原文</h3>
+            <details class="config-block">
+                <summary>📄 <code>config/modules.yaml</code>（模块启用/禁用/排序）</summary>
+                <pre class="config-view">{{ config_text.modules_yaml }}</pre>
+            </details>
+            <details class="config-block">
+                <summary>📄 <code>config/app.yaml</code>（含 ai_center 功能开关、运行模式等）</summary>
+                <pre class="config-view">{{ config_text.app_yaml }}</pre>
+            </details>
+            <div class="tip">修改任一配置后请重启服务（停止 <code>python app.py</code> 后重新启动）。</div>
+        </div>
+
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + (type || 'info');
+    setTimeout(function() { t.classList.remove('show'); }, 2800);
+}
+
+// ============ 加载遮罩（长任务用，复用 #2A4365 配色） ============
+function showOverlay(text) {
+    let el = document.getElementById('umLoadingOverlay');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'umLoadingOverlay';
+        el.className = 'um-loading-overlay';
+        el.innerHTML = '<div class="um-loading-box"><div class="um-spinner"></div><div class="um-loading-text"></div></div>';
+        document.body.appendChild(el);
+    }
+    el.querySelector('.um-loading-text').textContent = text || '处理中…';
+    el.classList.add('show');
+}
+function hideOverlay() {
+    const el = document.getElementById('umLoadingOverlay');
+    if (el) el.classList.remove('show');
+}
+
+// 长任务：触发时显示全屏加载遮罩，避免用户误以为没反应
+const LONG_ACTIONS = {
+    rebuild_index: '正在重建向量索引，请稍候…',
+    compress_index: '正在压缩向量索引，请稍候…'
+};
+
+// 重建索引为后台异步执行：轮询进度并实时更新遮罩文案，避免用户以为卡死
+function pollRebuildStatus() {
+    const timer = setInterval(async function () {
+        try {
+            const r = await fetch('/config/api/ai/rebuild_status', {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const d = await r.json();
+            const s = (d && d.data) || {};
+            showOverlay('正在重建向量索引 ' + (s.done || 0) + '/' + (s.total || 0) +
+                '（成功 ' + (s.ok || 0) + '，跳过 ' + (s.skipped || 0) +
+                '，失败 ' + (s.failed || 0) + '）…');
+            if (!s.running) {
+                clearInterval(timer);
+                hideOverlay();
+                if ((s.failed || 0) > 0) {
+                    const errs = (s.errors || []).slice(0, 3).join('；');
+                    showToast('重建完成：成功 ' + (s.ok || 0) + ' 本，失败 ' + (s.failed || 0) +
+                        ' 本。' + errs, 'error');
+                } else {
+                    showToast('重建完成：成功 ' + (s.ok || 0) + ' 本，跳过 ' + (s.skipped || 0) + ' 本', 'success');
+                }
+                setTimeout(function () { location.reload(); }, 1500);
+            }
+        } catch (e) {
+            clearInterval(timer);
+            hideOverlay();
+            showToast('进度查询失败：' + e.message, 'error');
+        }
+    }, 2000);
+}
+
+// ============ 选择性索引：三级分类勾选树 ============
+// 数据形态：[{id, name, cat1, cat2, indexed}]，由视图 ai_config_page 传入。
+// 四种选择粒度（整一级 / 整二级 / 单本 / 多本）最终都收敛成 book_ids 列表交给后端，
+// 后端只看 id，不感知分类结构。
+const BOOKS = {{ book_tree|tojson }};
+let SELECTED = new Set();   // 选中的 book_id
+let TREE = {};              // 当前（已按搜索过滤的）分类树：cat1 -> cat2 -> [book]
+
+// ============ 折叠状态：一级 / 二级分类各自可独立折叠 ============
+const collapsedL1 = new Set();        // 已折叠（收起）的一级分类名
+const collapsedL2 = {};               // c1 -> Set(c2)：该一级下已折叠的二级分类名
+// 默认全部折叠：一级分类、二级分类都收起，用户手动点箭头展开
+BOOKS.forEach(function (b) {
+    const c1 = b.cat1 || '未分类';
+    collapsedL1.add(c1);
+    const c2 = b.cat2 || '未分类';
+    if (!collapsedL2[c1]) collapsedL2[c1] = new Set();
+    collapsedL2[c1].add(c2);
+});
+function isL2Collapsed(c1, c2) {
+    return !!(collapsedL2[c1] && collapsedL2[c1].has(c2));
+}
+function toggleL1(c1) {
+    if (collapsedL1.has(c1)) collapsedL1.delete(c1); else collapsedL1.add(c1);
+    renderSelTree();
+}
+function toggleL2(c1, c2) {
+    if (!collapsedL2[c1]) collapsedL2[c1] = new Set();
+    if (collapsedL2[c1].has(c2)) collapsedL2[c1].delete(c2); else collapsedL2[c1].add(c2);
+    renderSelTree();
+}
+
+function esc(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function toggleSel() {
+    const body = document.getElementById('selBody');
+    const arrow = document.getElementById('selArrow');
+    const open = (body.style.display === 'none');
+    body.style.display = open ? 'block' : 'none';
+    arrow.classList.toggle('open', open);
+    if (open) renderSelTree();
+}
+
+// 按搜索关键字重建可见树（父级联动始终基于「当前可见」的子项，行为可预期）
+function buildTree() {
+    const kw = (document.getElementById('selSearch') || {}).value || '';
+    const k = kw.trim().toLowerCase();
+    const map = {};
+    BOOKS.forEach(function (b) {
+        if (k && (String(b.name) + ' ' + b.cat1 + ' ' + b.cat2).toLowerCase().indexOf(k) < 0) return;
+        const c1 = b.cat1 || '未分类';
+        const c2 = b.cat2 || '未分类';
+        if (!map[c1]) map[c1] = {};
+        if (!map[c1][c2]) map[c1][c2] = [];
+        map[c1][c2].push(b);
+    });
+    TREE = map;
+}
+
+// 取某分类节点下当前可见的书；c2 传 null 表示取整一级
+function treeBooks(c1, c2) {
+    let out = [];
+    if (c2 === null) {
+        const subs = TREE[c1] || {};
+        Object.keys(subs).forEach(function (k) { out = out.concat(subs[k]); });
+    } else {
+        out = (TREE[c1] || {})[c2] || [];
+    }
+    return out;
+}
+
+function renderSelTree() {
+    buildTree();
+    const box = document.getElementById('selTree');
+    box.innerHTML = '';
+    const keys1 = Object.keys(TREE).sort();
+    if (!keys1.length) {
+        box.innerHTML = '<div class="sel-empty">没有匹配的图书</div>';
+        updateFoot();
+        return;
+    }
+    const searching = !!(document.getElementById('selSearch') && document.getElementById('selSearch').value.trim());
+    keys1.forEach(function (c1) {
+        const subs = TREE[c1];
+        const keys2 = Object.keys(subs).sort();
+        let n1 = 0;
+        keys2.forEach(function (k) { n1 += subs[k].length; });
+        box.appendChild(nodeEl('l1', c1, null, c1, n1, null));
+        // 搜索时忽略折叠，保证搜到的书始终可见；否则按折叠状态决定是否渲染子项
+        if (searching || !collapsedL1.has(c1)) {
+            keys2.forEach(function (c2) {
+                box.appendChild(nodeEl('l2', c1, c2, c2, subs[c2].length, null));
+                if (searching || !isL2Collapsed(c1, c2)) {
+                    subs[c2].forEach(function (b) {
+                        box.appendChild(nodeEl('bk', c1, c2, b.name, 0, b));
+                    });
+                }
+            });
+        }
+    });
+    syncAll();
+    updateFoot();
+}
+
+function nodeEl(lvl, c1, c2, label, cnt, book) {
+    const row = document.createElement('div');
+    row.className = 'sel-node ' + (lvl === 'l1' ? 'sel-lvl1' : (lvl === 'l2' ? 'sel-lvl2' : 'sel-book'));
+    const searching = !!(document.getElementById('selSearch') && document.getElementById('selSearch').value.trim());
+    // 一级 / 二级分类前加折叠箭头（图书无箭头，靠缩进对齐）
+    if (lvl === 'l1' || lvl === 'l2') {
+        const ar = document.createElement('span');
+        ar.className = 'sel-arrow';
+        const isOpen = searching || (lvl === 'l1' ? !collapsedL1.has(c1) : !isL2Collapsed(c1, c2));
+        if (isOpen) ar.classList.add('open');
+        ar.textContent = '▶';
+        ar.title = isOpen ? '点击折叠' : '点击展开';
+        row.appendChild(ar);
+    }
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.setAttribute('data-lvl', lvl);
+    cb.setAttribute('data-c1', c1);
+    if (c2 !== null) cb.setAttribute('data-c2', c2);
+    if (book) cb.setAttribute('data-id', book.id);
+    cb.addEventListener('change', function () { onCheck(cb); });
+    row.appendChild(cb);
+    const span = document.createElement('span');
+    span.innerHTML = esc(label) + (cnt ? ' <span class="sel-count">(' + cnt + ')</span>' : '');
+    row.appendChild(span);
+    if (book) {
+        const badge = document.createElement('span');
+        badge.className = 'sel-badge ' + (book.indexed ? 'done' : 'todo');
+        badge.textContent = book.indexed ? '已索引' : '未索引';
+        row.appendChild(badge);
+    }
+    // 点分类行（除 checkbox 外）折叠 / 展开；checkbox 只负责勾选，互不干扰
+    if (lvl === 'l1' || lvl === 'l2') {
+        row.addEventListener('click', function (e) {
+            if (e.target && e.target.tagName === 'INPUT') return;
+            if (lvl === 'l1') toggleL1(c1); else toggleL2(c1, c2);
+        });
+    }
+    return row;
+}
+
+function onCheck(cb) {
+    const lvl = cb.getAttribute('data-lvl');
+    const c1 = cb.getAttribute('data-c1');
+    const c2 = cb.getAttribute('data-c2');
+    if (lvl === 'bk') {
+        const id = cb.getAttribute('data-id');
+        if (cb.checked) SELECTED.add(id); else SELECTED.delete(id);
+    } else {
+        // 父级：整一级 / 整二级 全选或全取消
+        treeBooks(c1, lvl === 'l1' ? null : c2).forEach(function (b) {
+            if (cb.checked) SELECTED.add(b.id); else SELECTED.delete(b.id);
+        });
+    }
+    syncAll();
+    updateFoot();
+}
+
+// 依据 SELECTED 重算所有 checkbox：全勾 / 半勾(indeterminate) / 未勾
+function syncAll() {
+    document.querySelectorAll('#selTree input[type=checkbox]').forEach(function (cb) {
+        const lvl = cb.getAttribute('data-lvl');
+        const c1 = cb.getAttribute('data-c1');
+        const c2 = cb.getAttribute('data-c2');
+        if (lvl === 'bk') {
+            cb.checked = SELECTED.has(cb.getAttribute('data-id'));
+            cb.indeterminate = false;
+        } else {
+            const list = treeBooks(c1, lvl === 'l1' ? null : c2);
+            let hit = 0;
+            list.forEach(function (b) { if (SELECTED.has(b.id)) hit++; });
+            cb.checked = list.length > 0 && hit === list.length;
+            cb.indeterminate = hit > 0 && hit < list.length;
+        }
+    });
+}
+
+function updateFoot() {
+    let total = 0;
+    Object.keys(TREE).forEach(function (c1) {
+        Object.keys(TREE[c1]).forEach(function (c2) { total += TREE[c1][c2].length; });
+    });
+    const cntEl = document.getElementById('selCount');
+    const pickEl = document.getElementById('selPicked');
+    const btn = document.getElementById('selIndexBtn');
+    if (cntEl) cntEl.textContent = '显示 ' + total + ' 本';
+    if (pickEl) pickEl.textContent = SELECTED.size;
+    if (btn) btn.disabled = (SELECTED.size === 0);
+}
+
+function selAll(flag) {
+    Object.keys(TREE).forEach(function (c1) {
+        Object.keys(TREE[c1]).forEach(function (c2) {
+            TREE[c1][c2].forEach(function (b) {
+                if (flag) SELECTED.add(b.id); else SELECTED.delete(b.id);
+            });
+        });
+    });
+    syncAll();
+    updateFoot();
+}
+
+function indexSelected() {
+    const ids = Array.from(SELECTED);
+    if (!ids.length) { showToast('请先勾选要索引的文件', 'error'); return; }
+    if (!confirm('将对选中的 ' + ids.length + ' 个文件重建向量索引（跳过摘要生成），确定继续？')) return;
+    doAction('rebuild_index', { book_ids: JSON.stringify(ids) });
+}
+
+async function doAction(action, payload) {
+    payload = payload || {};
+    const fd = new FormData();
+    Object.keys(payload).forEach(function(k) { fd.append(k, payload[k]); });
+
+    const url = '/config/api/ai/' + action;
+    if (LONG_ACTIONS[action]) {
+        const tip = (action === 'rebuild_index' && String(payload.force || '0') === '1')
+            ? '正在全量重建向量索引，请稍候…'
+            : LONG_ACTIONS[action];
+        showOverlay(tip);
+    }
+    let keepOverlay = false;
+
+    try {
+        const resp = await fetch(url, { method: 'POST', body: fd });
+        let data;
+        try {
+            data = await resp.json();
+        } catch (e) {
+            throw new Error('服务器返回了非预期内容（可能服务异常）');
+        }
+        if (data.code === 200) {
+            if (action === 'rebuild_index') {
+                // 后端立即返回，改由轮询展示进度
+                keepOverlay = true;
+                showToast(data.msg || '已在后台开始重建', 'success');
+                pollRebuildStatus();
+                return;
+            } else if (action === 'toggle_module') {
+                showToast('已修改配置，3 秒后自动刷新页面...', 'success');
+                setTimeout(function() { location.reload(); }, 3000);
+            } else if (action === 'clear_logs') {
+                showToast(data.msg || '已清空', 'success');
+                setTimeout(function() { location.reload(); }, 1500);
+            } else {
+                showToast(data.msg || '操作成功', 'success');
+                setTimeout(function() { location.reload(); }, 2000);
+            }
+        } else {
+            showToast('操作失败：' + (data.msg || '未知错误'), 'error');
+        }
+    } catch (e) {
+        showToast('操作失败：' + (e.message || '网络错误'), 'error');
+    } finally {
+        if (!keepOverlay) hideOverlay();
+    }
+}
+
+async function postJSON(url, payload) {
+    try {
+        const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await resp.json();
+        if (data.code === 200) { showToast(data.msg || '操作成功', 'success'); return data; }
+        showToast('操作失败：' + (data.msg || '未知错误'), 'error');
+        return null;
+    } catch (e) {
+        showToast('网络错误：' + e.message, 'error');
+        return null;
+    }
+}
+
+function saveAiMode() {
+    const mode = document.querySelector('input[name="ai_mode"]:checked').value;
+    postJSON('/config/api/ai/set_mode', { mode: mode }).then(function (d) {
+        if (d) setTimeout(function () { location.reload(); }, 1200);
+    });
+}
+function saveSecurity() {
+    const enabled = document.getElementById('securityLock').checked;
+    postJSON('/config/api/ai/set_security', { enabled: enabled }).then(function (d) {
+        if (d) setTimeout(function () { location.reload(); }, 1000);
+    });
+}
+
+// ---------- 问答加速（可选步骤开关） ----------
+// 预设：与后端 config.SPEED_PROFILES 保持一致，仅拨动开关，不直接落盘
+const QA_PRESETS = {
+    high:     { hyde: true,  rerank: true,  citation_check: true,  cand: 24 },
+    balanced: { hyde: true,  rerank: true,  citation_check: true,  cand: 12 },
+};
+function presetQaSpeed(name) {
+    const p = QA_PRESETS[name];
+    if (!p) return;
+    document.getElementById('qaHyde').checked = p.hyde;
+    document.getElementById('qaRerank').checked = p.rerank;
+    document.getElementById('qaCitation').checked = p.citation_check;
+    document.getElementById('qaRerankCand').value = p.cand;
+    const label = { high: '高质量', balanced: '均衡' }[name];
+    showToast('已切换到「' + label + '」预设，请点保存', 'info');
+}
+function saveQaSpeed() {
+    const payload = {
+        hyde: document.getElementById('qaHyde').checked,
+        rerank: document.getElementById('qaRerank').checked,
+        citation_check: document.getElementById('qaCitation').checked,
+        grounding_async: document.getElementById('qaAsync').checked,
+        rerank_device: document.getElementById('qaRerankDevice').value,
+        rerank_max_candidates: parseInt(document.getElementById('qaRerankCand').value, 10) || 24,
+    };
+    postJSON('/config/api/ai/set_qa_speed', payload).then(function (d) {
+        if (d) setTimeout(function () { location.reload(); }, 1000);
+    });
+}
+function onBackendChange() {
+    const b = document.getElementById('aiBackend').value;
+    ['llama_cpp', 'ollama', 'dashscope', 'vllm', 'transformers'].forEach(function (k) {
+        document.getElementById('panel-' + k).classList.toggle('hidden', k !== b);
+    });
+}
+async function saveBackend() {
+    const b = document.getElementById('aiBackend').value;
+    const payload = { backend: b };
+    if (b === 'llama_cpp') payload.model_path = document.getElementById('llama_model_path').value;
+    else if (b === 'ollama') {
+        payload.url = document.getElementById('ollama_url').value;
+        payload.model = document.getElementById('ollama_model').value;
+    } else if (b === 'dashscope') {
+        payload.url = document.getElementById('dash_url').value;
+        payload.model = document.getElementById('dash_model').value;
+        payload.api_key = document.getElementById('dash_api_key').value;
+    } else if (b === 'vllm') {
+        payload.url = document.getElementById('vllm_url').value;
+        payload.model = document.getElementById('vllm_model').value;
+        payload.api_key = document.getElementById('vllm_api_key').value;
+    } else if (b === 'transformers') payload.model_path = document.getElementById('tf_model_path').value;
+    postJSON('/config/api/ai/set_backend', payload).then(function (d) {
+        if (d) setTimeout(function () { location.reload(); }, 1200);
+    });
+}
+async function saveModelPaths() {
+    const payload = {
+        light_emb: document.getElementById('mp_light_emb').value,
+        full_emb: document.getElementById('mp_full_emb').value,
+        local_llm: document.getElementById('mp_local_llm').value,
+    };
+    postJSON('/config/api/ai/set_model_paths', payload).then(function (d) {
+        if (d) setTimeout(function () { location.reload(); }, 1000);
+    });
+}
+
+onBackendChange();
+</script>
+{% endblock %}

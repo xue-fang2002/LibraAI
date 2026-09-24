@@ -1,0 +1,43 @@
+# ============================================================
+# LibraAI 一键起服务
+#   docker compose up -d          # 构建并启动
+#   docker compose logs -f        # 看日志（初始管理员密码在日志里）
+#   docker compose down           # 停止（数据保留在卷里）
+# ============================================================
+services:
+  app:
+    build:
+      context: .
+      # AI 能力（向量检索 / 本地大模型）需要时改成 true；首次构建会多花十几分钟
+      args:
+        INSTALL_AI: "false"
+    image: libraai:latest
+    container_name: libraai
+    restart: unless-stopped
+    ports:
+      # 宿主机 5005 → 容器 5005；想换端口改左边，例如 "8080:5005"
+      - "5005:5005"
+    environment:
+      # 生产环境务必设置：会话加密密钥（不设则自动生成，重启后会话失效）
+      SECRET_KEY: "${SECRET_KEY:-}"
+      # 首次启动自动创建的 admin 初始密码；留空则随机生成（见日志 / data 卷内 .init_admin_pwd）
+      ADMIN_INIT_PASSWORD: "${ADMIN_INIT_PASSWORD:-}"
+      # 数据库放在挂卷目录，容器重建不丢数据
+      DB_PATH: "/app/data/book_manager.db"
+      # 直连暴露保持 0；前面挂了反向代理再改 1
+      TRUST_PROXY: "0"
+      TZ: "Asia/Shanghai"
+    volumes:
+      # 用命名卷，数据生命周期与容器解耦
+      - app_data:/app/data
+      - app_uploads:/app/uploads
+      - app_vector:/app/vector_data
+      - app_ai_vector:/app/ai_vector_store
+      # 本地 AI 模型目录（可选）：把模型放到 ./models 下即可被读取，不进镜像
+      - ./models:/app/models
+
+volumes:
+  app_data:
+  app_uploads:
+  app_vector:
+  app_ai_vector:

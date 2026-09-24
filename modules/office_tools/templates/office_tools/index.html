@@ -1,0 +1,749 @@
+{% extends "layout_base.html" %}
+{% block page_title %}🛠️ 办公工具{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='office_tools/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='office_tools/ai_office.css') }}">
+{% if request.args.get('hub') == '1' %}
+{# 从工具箱 Hub 进入：仅附加返回按钮样式，不影响办公工具自身任何样式 #}
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox_hub/hub.css') }}">
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="ot-clay-container">
+  <!-- 顶部标题区 -->
+  <div class="ot-clay-header">
+    <div class="ot-clay-title">
+      <span class="ot-clay-icon">🛠️</span>
+      <div>
+        <h1>办公工具</h1>
+        <p class="ot-clay-subtitle">全能办公批量处理中心 · 支持其他电脑远程使用</p>
+      </div>
+    </div>
+    <div class="ot-clay-actions">
+      {% if request.args.get('hub') == '1' %}{% set raw_back = request.args.get('back') or '' %}{% set hub_back = raw_back if raw_back.startswith('/') and not raw_back.startswith('//') else '/tools' %}<a class="hub-back inline" href="{{ hub_back }}">‹ 返回工具箱</a>{% endif %}
+      <button class="ot-clay-btn ot-clay-btn-sm" onclick="showEnvCheck()">
+        <span>⚙️</span> 环境检测
+      </button>
+      <button class="ot-clay-btn ot-clay-btn-sm ot-clay-btn-secondary" onclick="showHelp()">
+        <span>📖</span> 使用指南
+      </button>
+    </div>
+  </div>
+
+  <!-- 顶部一级Tab -->
+  <div class="ot-clay-tabs">
+    <button class="ot-clay-tab active" data-tab="mod1" onclick="switchTab('mod1')">
+      <span class="ot-tab-icon">📁</span>
+      <span>批量创建</span>
+    </button>
+    <button class="ot-clay-tab" data-tab="mod2" onclick="switchTab('mod2')">
+      <span class="ot-tab-icon">🔍</span>
+      <span>提取清单</span>
+    </button>
+    <button class="ot-clay-tab" data-tab="mod3" onclick="switchTab('mod3')">
+      <span class="ot-tab-icon">✏️</span>
+      <span>批量改名</span>
+    </button>
+    <button class="ot-clay-tab" data-tab="mod4" onclick="switchTab('mod4')">
+      <span class="ot-tab-icon">📊</span>
+      <span>Excel专项</span>
+    </button>
+    <button class="ot-clay-tab" data-tab="mod5" onclick="switchTab('mod5')">
+      <span class="ot-tab-icon">📦</span>
+      <span>文件搬运</span>
+    </button>
+    <button class="ot-clay-tab" data-tab="mod6" onclick="switchTab('mod6')">
+      <span class="ot-tab-icon">📋</span>
+      <span>任务中心</span>
+    </button>
+  </div>
+
+  <!-- 内容区 -->
+  <div class="ot-clay-content">
+    <!-- ==================== 模块1：批量创建 ==================== -->
+    <div id="mod1" class="ot-clay-panel active">
+      <div class="ot-clay-subtabs">
+        <button class="ot-clay-subtab active" data-subtab="m1-folders" onclick="switchSubTab('mod1', 'm1-folders')">📁 建文件夹</button>
+        <button class="ot-clay-subtab" data-subtab="m1-files" onclick="switchSubTab('mod1', 'm1-files')">📄 建文件</button>
+        <button class="ot-clay-subtab" data-subtab="m1-sheets" onclick="switchSubTab('mod1', 'm1-sheets')">📊 建分表</button>
+      </div>
+
+      <!-- 建文件夹 -->
+      <div id="m1-folders" class="ot-clay-subpanel active">
+        <div class="ot-clay-workspace">
+          <div class="ot-clay-form-card">
+            <div class="ot-clay-card-title">📁 配置输入</div>
+            <div class="ot-clay-form-group">
+              <label>名称Excel文件</label>
+              <div class="ot-clay-upload-zone" id="m1-folders-upload" onclick="document.getElementById('m1-folders-file').click()">
+                <span class="ot-upload-icon">📤</span>
+                <p>点击或拖拽上传 Excel 文件</p>
+                <span class="ot-upload-hint">.xls / .xlsx</span>
+              </div>
+              <input type="file" id="m1-folders-file" accept=".xls,.xlsx" style="display:none" onchange="handleFileSelect(this, 'm1-folders')">
+              <div class="ot-file-tag" id="m1-folders-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>名称列标题</label>
+              <input type="text" class="ot-clay-input" id="m1-folders-col" value="文件夹名称" placeholder="如：文件夹名称">
+            </div>
+            <div class="ot-clay-form-group">
+              <label>目标子目录（相对，每行一个，留空=根目录）</label>
+              <textarea class="ot-clay-input ot-clay-textarea" id="m1-folders-dirs" rows="3" placeholder="每行一个相对子目录&#10;如：2024/Q1 或 子项目A"></textarea>
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-ghost" onclick="downloadTemplate('folder')">
+                <span>📥</span> 下载模板
+              </button>
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod1Folders()">
+                <span>▶</span> 执行创建
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card">
+            <div class="ot-clay-card-title">📋 执行结果</div>
+            <div class="ot-clay-stats" id="m1-folders-stats"></div>
+            <div class="ot-clay-log" id="m1-folders-log">
+              <div class="ot-log-empty">等待执行...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 建文件 -->
+      <div id="m1-files" class="ot-clay-subpanel">
+        <div class="ot-clay-workspace">
+          <div class="ot-clay-form-card">
+            <div class="ot-clay-card-title">📄 配置输入</div>
+            <div class="ot-clay-form-group">
+              <label>名称Excel文件</label>
+              <div class="ot-clay-upload-zone" id="m1-files-upload" onclick="document.getElementById('m1-files-file').click()">
+                <span class="ot-upload-icon">📤</span>
+                <p>点击或拖拽上传 Excel 文件</p>
+                <span class="ot-upload-hint">.xls / .xlsx</span>
+              </div>
+              <input type="file" id="m1-files-file" accept=".xls,.xlsx" style="display:none" onchange="handleFileSelect(this, 'm1-files')">
+              <div class="ot-file-tag" id="m1-files-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>名称列标题</label>
+              <input type="text" class="ot-clay-input" id="m1-files-col" value="文件名称" placeholder="如：文件名称">
+            </div>
+            <div class="ot-clay-form-group">
+              <label>文件类型</label>
+              <div class="ot-clay-radio-group">
+                <label class="ot-clay-radio">
+                  <input type="radio" name="m1-file-type" value="excel" checked>
+                  <span class="ot-radio-label">📊 Excel</span>
+                </label>
+                <label class="ot-clay-radio">
+                  <input type="radio" name="m1-file-type" value="txt">
+                  <span class="ot-radio-label">📝 TXT</span>
+                </label>
+                <label class="ot-clay-radio">
+                  <input type="radio" name="m1-file-type" value="word">
+                  <span class="ot-radio-label">📄 Word</span>
+                </label>
+              </div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>目标子目录（相对，每行一个，留空=根目录）</label>
+              <textarea class="ot-clay-input ot-clay-textarea" id="m1-files-dirs" rows="3" placeholder="每行一个相对子目录，留空=根目录"></textarea>
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-ghost" onclick="downloadTemplate('file')">
+                <span>📥</span> 下载模板
+              </button>
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod1Files()">
+                <span>▶</span> 执行创建
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card">
+            <div class="ot-clay-card-title">📋 执行结果</div>
+            <div class="ot-clay-stats" id="m1-files-stats"></div>
+            <div class="ot-clay-log" id="m1-files-log">
+              <div class="ot-log-empty">等待执行...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 建分表 -->
+      <div id="m1-sheets" class="ot-clay-subpanel">
+        <div class="ot-clay-workspace">
+          <div class="ot-clay-form-card">
+            <div class="ot-clay-card-title">📊 配置输入</div>
+            <div class="ot-clay-form-group">
+              <label>名称Excel文件（含分表名）</label>
+              <div class="ot-clay-upload-zone" id="m1-sheets-upload" onclick="document.getElementById('m1-sheets-file').click()">
+                <span class="ot-upload-icon">📤</span>
+                <p>点击或拖拽上传 Excel 文件</p>
+                <span class="ot-upload-hint">.xls / .xlsx</span>
+              </div>
+              <input type="file" id="m1-sheets-file" accept=".xls,.xlsx" style="display:none" onchange="handleFileSelect(this, 'm1-sheets')">
+              <div class="ot-file-tag" id="m1-sheets-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>名称列标题</label>
+              <input type="text" class="ot-clay-input" id="m1-sheets-col" value="分表名称" placeholder="如：分表名称">
+            </div>
+            <div class="ot-clay-form-group">
+              <label class="ot-clay-checkbox">
+                <input type="checkbox" id="m1-sheets-fill" onchange="toggleTemplateUpload()">
+                <span class="ot-check-label">复制内容模板（含格式）</span>
+              </label>
+            </div>
+            <div class="ot-clay-form-group" id="m1-sheets-template-group" style="display:none">
+              <label>分表内容模板Excel</label>
+              <div class="ot-clay-upload-zone ot-clay-upload-sm" id="m1-sheets-template-upload" onclick="document.getElementById('m1-sheets-template').click()">
+                <span class="ot-upload-icon">📋</span>
+                <p>上传模板文件</p>
+              </div>
+              <input type="file" id="m1-sheets-template" accept=".xlsx" style="display:none" onchange="handleFileSelect(this, 'm1-sheets-template')">
+              <div class="ot-file-tag" id="m1-sheets-template-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>需要添加分表的Excel文件（可多选，上传）</label>
+              <div class="ot-clay-upload-zone" id="m1-sheets-targets-upload" onclick="document.getElementById('m1-sheets-targets-file').click()">
+                <span class="ot-upload-icon">📤</span>
+                <p>点击或拖拽上传 Excel（可多选）</p>
+                <span class="ot-upload-hint">将在此批量为这些文件添加分表</span>
+              </div>
+              <input type="file" id="m1-sheets-targets-file" accept=".xlsx" multiple style="display:none" onchange="handleMultiFileSelect(this, 'm1-sheets-targets')">
+              <div class="ot-file-tag" id="m1-sheets-targets-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-ghost" onclick="downloadTemplate('sheet')">
+                <span>📥</span> 下载模板
+              </button>
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod1Sheets()">
+                <span>▶</span> 执行创建
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card">
+            <div class="ot-clay-card-title">📋 执行结果</div>
+            <div class="ot-clay-stats" id="m1-sheets-stats"></div>
+            <div class="ot-clay-log" id="m1-sheets-log">
+              <div class="ot-log-empty">等待执行...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模块2：提取清单 ==================== -->
+    <div id="mod2" class="ot-clay-panel">
+      <div class="ot-clay-workspace ot-clay-workspace-full">
+        <div class="ot-clay-form-card ot-clay-form-card-wide">
+          <div class="ot-clay-card-title">🔍 提取配置</div>
+          <div class="ot-clay-form-group">
+            <label>上传文件夹（压缩为 zip 上传）</label>
+            <div class="ot-clay-upload-zone" id="m2-folder-upload" onclick="document.getElementById('m2-folder-file').click()">
+              <span class="ot-upload-icon">📦</span>
+              <p>点击或拖拽上传文件夹压缩包</p>
+              <span class="ot-upload-hint">.zip（请先把目标文件夹压缩成 zip）</span>
+            </div>
+            <input type="file" id="m2-folder-file" accept=".zip" style="display:none" onchange="handleFileSelect(this, 'm2-folder')">
+            <div class="ot-file-tag" id="m2-folder-tag" style="display:none"></div>
+          </div>
+          <div class="ot-clay-form-row">
+            <div class="ot-clay-form-group ot-clay-form-group-half">
+              <label>提取模式</label>
+              <div class="ot-clay-radio-group">
+                <label class="ot-clay-radio">
+                  <input type="radio" name="m2-mode" value="files" checked onchange="toggleSuffixInput()">
+                  <span class="ot-radio-label">仅文件</span>
+                </label>
+                <label class="ot-clay-radio">
+                  <input type="radio" name="m2-mode" value="all" onchange="toggleSuffixInput()">
+                  <span class="ot-radio-label">文件+文件夹</span>
+                </label>
+                <label class="ot-clay-radio">
+                  <input type="radio" name="m2-mode" value="filter" onchange="toggleSuffixInput()">
+                  <span class="ot-radio-label">按后缀筛选</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="ot-clay-form-row">
+            <div class="ot-clay-form-group ot-clay-form-group-half" id="m2-suffix-group" style="display:none">
+              <label>筛选后缀</label>
+              <input type="text" class="ot-clay-input" id="m2-suffix" placeholder="如：xlsx 或 .xlsx">
+            </div>
+            <div class="ot-clay-form-group ot-clay-form-group-half">
+              <label class="ot-clay-checkbox">
+                <input type="checkbox" id="m2-recursive">
+                <span class="ot-check-label">递归遍历所有子文件夹</span>
+              </label>
+              <label class="ot-clay-checkbox">
+                <input type="checkbox" id="m2-remove-suffix">
+                <span class="ot-check-label">导出时去除文件名后缀</span>
+              </label>
+            </div>
+          </div>
+          <div class="ot-clay-form-actions">
+            <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod2Extract()">
+              <span>🔍</span> 开始提取
+            </button>
+            <button class="ot-clay-btn ot-clay-btn-ghost" onclick="exportMod2('xlsx')">
+              <span>📊</span> 导出Excel
+            </button>
+            <button class="ot-clay-btn ot-clay-btn-ghost" onclick="exportMod2('csv')">
+              <span>📄</span> 导出CSV
+            </button>
+          </div>
+        </div>
+        <div class="ot-clay-result-card ot-clay-result-card-wide">
+          <div class="ot-clay-card-title">📋 提取结果 <span class="ot-clay-count" id="m2-count"></span></div>
+          <div class="ot-clay-table-wrap">
+            <table class="ot-clay-table" id="m2-table">
+              <thead><tr><th>序号</th><th>名称</th></tr></thead>
+              <tbody id="m2-tbody"><tr><td colspan="2" class="ot-td-empty">等待提取...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模块3：批量改名 ==================== -->
+    <div id="mod3" class="ot-clay-panel">
+      <div class="ot-clay-subtabs">
+        <button class="ot-clay-subtab active" data-subtab="m3-simple" onclick="switchSubTab('mod3', 'm3-simple')">✏️ 简单替换</button>
+        <button class="ot-clay-subtab" data-subtab="m3-excel" onclick="switchSubTab('mod3', 'm3-excel')">📋 Excel对照</button>
+      </div>
+
+      <!-- 简单替换 -->
+      <div id="m3-simple" class="ot-clay-subpanel active">
+        <div class="ot-clay-workspace">
+          <div class="ot-clay-form-card">
+            <div class="ot-clay-card-title">✏️ 配置输入</div>
+            <div class="ot-clay-form-group">
+              <label>上传文件夹（压缩为 zip 上传）</label>
+              <div class="ot-clay-upload-zone" id="m3-simple-folder-upload" onclick="document.getElementById('m3-simple-folder-file').click()">
+                <span class="ot-upload-icon">📦</span>
+                <p>点击或拖拽上传文件夹压缩包</p>
+                <span class="ot-upload-hint">.zip</span>
+              </div>
+              <input type="file" id="m3-simple-folder-file" accept=".zip" style="display:none" onchange="handleFileSelect(this, 'm3-simple-folder')">
+              <div class="ot-file-tag" id="m3-simple-folder-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>查找文字</label>
+              <input type="text" class="ot-clay-input" id="m3-simple-old" placeholder="要替换的文字">
+            </div>
+            <div class="ot-clay-form-group">
+              <label>替换为</label>
+              <input type="text" class="ot-clay-input" id="m3-simple-new" placeholder="新文字（可为空）">
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod3Simple()">
+                <span>▶</span> 执行替换
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card">
+            <div class="ot-clay-card-title">📋 执行结果</div>
+            <div class="ot-clay-stats" id="m3-simple-stats"></div>
+            <div class="ot-clay-log" id="m3-simple-log">
+              <div class="ot-log-empty">等待执行...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Excel对照 -->
+      <div id="m3-excel" class="ot-clay-subpanel">
+        <div class="ot-clay-workspace">
+          <div class="ot-clay-form-card">
+            <div class="ot-clay-card-title">📋 配置输入</div>
+            <div class="ot-clay-form-group">
+              <label>上传文件夹（压缩为 zip 上传）</label>
+              <div class="ot-clay-upload-zone" id="m3-excel-folder-upload" onclick="document.getElementById('m3-excel-folder-file').click()">
+                <span class="ot-upload-icon">📦</span>
+                <p>点击或拖拽上传文件夹压缩包</p>
+                <span class="ot-upload-hint">.zip（包含待重命名的文件）</span>
+              </div>
+              <input type="file" id="m3-excel-folder-file" accept=".zip" style="display:none" onchange="handleFileSelect(this, 'm3-excel-folder')">
+              <div class="ot-file-tag" id="m3-excel-folder-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>对照Excel文件</label>
+              <div class="ot-clay-upload-zone" id="m3-excel-upload" onclick="document.getElementById('m3-excel-file').click()">
+                <span class="ot-upload-icon">📤</span>
+                <p>点击或拖拽上传对照表</p>
+                <span class="ot-upload-hint">需包含"原文件名"和"新文件名"两列</span>
+              </div>
+              <input type="file" id="m3-excel-file" accept=".xls,.xlsx" style="display:none" onchange="handleFileSelect(this, 'm3-excel')">
+              <div class="ot-file-tag" id="m3-excel-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-row">
+              <div class="ot-clay-form-group ot-clay-form-group-half">
+                <label>原名列标题</label>
+                <input type="text" class="ot-clay-input" id="m3-excel-oldcol" value="原文件名" placeholder="原文件名">
+              </div>
+              <div class="ot-clay-form-group ot-clay-form-group-half">
+                <label>新名列标题</label>
+                <input type="text" class="ot-clay-input" id="m3-excel-newcol" value="新文件名" placeholder="新文件名">
+              </div>
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-ghost" onclick="downloadTemplate('rename')">
+                <span>📥</span> 下载模板
+              </button>
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod3Excel()">
+                <span>▶</span> 执行重命名
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card">
+            <div class="ot-clay-card-title">📋 执行结果</div>
+            <div class="ot-clay-stats" id="m3-excel-stats"></div>
+            <div class="ot-clay-log" id="m3-excel-log">
+              <div class="ot-log-empty">等待执行...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模块4：Excel专项 ==================== -->
+    <div id="mod4" class="ot-clay-panel">
+      <div class="ot-clay-env-banner" id="m4-env-banner">
+        <span class="ot-env-icon">⏳</span>
+        <span>正在检测 Office 环境...</span>
+      </div>
+      <div class="ot-clay-subtabs">
+        <button class="ot-clay-subtab active" data-subtab="m4-cell" onclick="switchSubTab('mod4', 'm4-cell')">🔧 单元格替换</button>
+        <button class="ot-clay-subtab" data-subtab="m4-pdf" onclick="switchSubTab('mod4', 'm4-pdf')">📑 转PDF</button>
+        <button class="ot-clay-subtab" data-subtab="m4-delete" onclick="switchSubTab('mod4', 'm4-delete')">🗑️ 删除分表</button>
+      </div>
+
+      <!-- 单元格替换 -->
+      <div id="m4-cell" class="ot-clay-subpanel active">
+        <div class="ot-clay-workspace">
+          <div class="ot-clay-form-card">
+            <div class="ot-clay-card-title">🔧 配置输入</div>
+            <div class="ot-clay-form-group">
+              <label>上传文件夹（压缩为 zip 上传）</label>
+              <div class="ot-clay-upload-zone" id="m4-cell-folder-upload" onclick="document.getElementById('m4-cell-folder-file').click()">
+                <span class="ot-upload-icon">📦</span>
+                <p>点击或拖拽上传文件夹压缩包</p>
+                <span class="ot-upload-hint">.zip（包含待处理的Excel）</span>
+              </div>
+              <input type="file" id="m4-cell-folder-file" accept=".zip" style="display:none" onchange="handleFileSelect(this, 'm4-cell-folder')">
+              <div class="ot-file-tag" id="m4-cell-folder-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-row">
+              <div class="ot-clay-form-group ot-clay-form-group-half">
+                <label>单元格地址</label>
+                <input type="text" class="ot-clay-input" id="m4-cell-addr" value="A1" placeholder="如：A1">
+              </div>
+              <div class="ot-clay-form-group ot-clay-form-group-half">
+                <label>查找文字</label>
+                <input type="text" class="ot-clay-input" id="m4-cell-old" placeholder="要替换的文字">
+              </div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>替换为</label>
+              <input type="text" class="ot-clay-input" id="m4-cell-new" placeholder="新文字">
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod4Cell()">
+                <span>▶</span> 执行替换
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card">
+            <div class="ot-clay-card-title">📋 执行结果</div>
+            <div class="ot-clay-log" id="m4-cell-log">
+              <div class="ot-log-empty">等待执行...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 转PDF -->
+      <div id="m4-pdf" class="ot-clay-subpanel">
+        <div class="ot-clay-workspace">
+          <div class="ot-clay-form-card">
+            <div class="ot-clay-card-title">📑 配置输入</div>
+            <div class="ot-clay-form-group">
+              <label>上传文件夹（压缩为 zip 上传）</label>
+              <div class="ot-clay-upload-zone" id="m4-pdf-folder-upload" onclick="document.getElementById('m4-pdf-folder-file').click()">
+                <span class="ot-upload-icon">📦</span>
+                <p>点击或拖拽上传文件夹压缩包</p>
+                <span class="ot-upload-hint">.zip（含待转PDF的Excel，需服务器装Office）</span>
+              </div>
+              <input type="file" id="m4-pdf-folder-file" accept=".zip" style="display:none" onchange="handleFileSelect(this, 'm4-pdf-folder')">
+              <div class="ot-file-tag" id="m4-pdf-folder-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod4Pdf()">
+                <span>▶</span> 批量转PDF
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card">
+            <div class="ot-clay-card-title">📋 执行结果</div>
+            <div class="ot-clay-log" id="m4-pdf-log">
+              <div class="ot-log-empty">等待执行...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 删除分表 -->
+      <div id="m4-delete" class="ot-clay-subpanel">
+        <div class="ot-clay-workspace">
+          <div class="ot-clay-form-card">
+            <div class="ot-clay-card-title">🗑️ 配置输入</div>
+            <div class="ot-clay-form-group">
+              <label>上传文件夹（压缩为 zip 上传）</label>
+              <div class="ot-clay-upload-zone" id="m4-delete-folder-upload" onclick="document.getElementById('m4-delete-folder-file').click()">
+                <span class="ot-upload-icon">📦</span>
+                <p>点击或拖拽上传文件夹压缩包</p>
+                <span class="ot-upload-hint">.zip（含待处理的Excel）</span>
+              </div>
+              <input type="file" id="m4-delete-folder-file" accept=".zip" style="display:none" onchange="handleFileSelect(this, 'm4-delete-folder')">
+              <div class="ot-file-tag" id="m4-delete-folder-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>待删除分表名称</label>
+              <input type="text" class="ot-clay-input" id="m4-delete-names" placeholder="多个名称用逗号分隔，如：Sheet1,临时表,汇总">
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod4Delete()">
+                <span>▶</span> 执行删除
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card">
+            <div class="ot-clay-card-title">📋 执行结果</div>
+            <div class="ot-clay-log" id="m4-delete-log">
+              <div class="ot-log-empty">等待执行...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模块5：文件搬运 ==================== -->
+    <div id="mod5" class="ot-clay-panel">
+      <div class="ot-clay-subtabs">
+        <button class="ot-clay-subtab active" data-subtab="m5-movecopy" onclick="switchSubTab('mod5', 'm5-movecopy')">📦 移动/复制</button>
+        <button class="ot-clay-subtab" data-subtab="m5-paths" onclick="switchSubTab('mod5', 'm5-paths')">🔍 路径提取</button>
+      </div>
+
+      <!-- 移动/复制 -->
+      <div id="m5-movecopy" class="ot-clay-subpanel active">
+        <div class="ot-clay-workspace">
+          <div class="ot-clay-form-card">
+            <div class="ot-clay-card-title">📦 配置输入</div>
+            <div class="ot-clay-form-group">
+              <label>上传源文件夹（压缩为 zip 上传）</label>
+              <div class="ot-clay-upload-zone" id="m5-folder-upload" onclick="document.getElementById('m5-folder-file').click()">
+                <span class="ot-upload-icon">📦</span>
+                <p>点击或拖拽上传源文件夹压缩包</p>
+                <span class="ot-upload-hint">.zip（含待搬运的文件）</span>
+              </div>
+              <input type="file" id="m5-folder-file" accept=".zip" style="display:none" onchange="handleFileSelect(this, 'm5-folder')">
+              <div class="ot-file-tag" id="m5-folder-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label>映射Excel文件</label>
+              <div class="ot-clay-upload-zone" id="m5-upload" onclick="document.getElementById('m5-file').click()">
+                <span class="ot-upload-icon">📤</span>
+                <p>点击或拖拽上传映射表</p>
+                <span class="ot-upload-hint">第一行为子文件夹名，下方为文件名</span>
+              </div>
+              <input type="file" id="m5-file" accept=".xls,.xlsx" style="display:none" onchange="handleFileSelect(this, 'm5')">
+              <div class="ot-file-tag" id="m5-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-row">
+              <div class="ot-clay-form-group ot-clay-form-group-half">
+                <label>操作类型</label>
+                <div class="ot-clay-radio-group">
+                  <label class="ot-clay-radio">
+                    <input type="radio" name="m5-action" value="copy" checked>
+                    <span class="ot-radio-label">📋 复制</span>
+                  </label>
+                  <label class="ot-clay-radio">
+                    <input type="radio" name="m5-action" value="move">
+                    <span class="ot-radio-label">✂️ 移动</span>
+                  </label>
+                </div>
+              </div>
+              <div class="ot-clay-form-group ot-clay-form-group-half">
+                <label class="ot-clay-checkbox">
+                  <input type="checkbox" id="m5-recursive" checked>
+                  <span class="ot-check-label">递归扫描所有子目录</span>
+                </label>
+              </div>
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-ghost" onclick="downloadTemplate('mapping')">
+                <span>📥</span> 下载模板
+              </button>
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod5MoveCopy()">
+                <span>▶</span> 执行操作
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card">
+            <div class="ot-clay-card-title">📋 执行结果</div>
+            <div class="ot-clay-stats" id="m5-movecopy-stats"></div>
+            <div class="ot-clay-log" id="m5-movecopy-log">
+              <div class="ot-log-empty">等待执行...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 路径提取 -->
+      <div id="m5-paths" class="ot-clay-subpanel">
+        <div class="ot-clay-workspace ot-clay-workspace-full">
+          <div class="ot-clay-form-card ot-clay-form-card-wide">
+            <div class="ot-clay-card-title">🔍 路径提取配置</div>
+            <div class="ot-clay-form-group">
+              <label>上传文件夹（压缩为 zip 上传）</label>
+              <div class="ot-clay-upload-zone" id="m5-paths-folder-upload" onclick="document.getElementById('m5-paths-folder-file').click()">
+                <span class="ot-upload-icon">📦</span>
+                <p>点击或拖拽上传文件夹压缩包</p>
+                <span class="ot-upload-hint">.zip</span>
+              </div>
+              <input type="file" id="m5-paths-folder-file" accept=".zip" style="display:none" onchange="handleFileSelect(this, 'm5-paths-folder')">
+              <div class="ot-file-tag" id="m5-paths-folder-tag" style="display:none"></div>
+            </div>
+            <div class="ot-clay-form-row">
+              <div class="ot-clay-form-group ot-clay-form-group-half">
+                <label>路径类型</label>
+                <div class="ot-clay-radio-group">
+                  <label class="ot-clay-radio">
+                    <input type="radio" name="m5-paths-type" value="absolute" checked>
+                    <span class="ot-radio-label">绝对路径</span>
+                  </label>
+                  <label class="ot-clay-radio">
+                    <input type="radio" name="m5-paths-type" value="relative">
+                    <span class="ot-radio-label">相对路径</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="ot-clay-form-group">
+              <label class="ot-clay-checkbox">
+                <input type="checkbox" id="m5-paths-recursive" checked>
+                <span class="ot-check-label">递归遍历所有子文件夹</span>
+              </label>
+            </div>
+            <div class="ot-clay-form-actions">
+              <button class="ot-clay-btn ot-clay-btn-primary" onclick="executeMod5Paths()">
+                <span>🔍</span> 开始提取
+              </button>
+              <button class="ot-clay-btn ot-clay-btn-ghost" onclick="exportMod5Paths('xlsx')">
+                <span>📊</span> 导出Excel
+              </button>
+              <button class="ot-clay-btn ot-clay-btn-ghost" onclick="exportMod5Paths('csv')">
+                <span>📄</span> 导出CSV
+              </button>
+            </div>
+          </div>
+          <div class="ot-clay-result-card ot-clay-result-card-wide">
+            <div class="ot-clay-card-title">📋 提取结果 <span class="ot-clay-count" id="m5-paths-count"></span></div>
+            <div class="ot-clay-table-wrap">
+              <table class="ot-clay-table" id="m5-paths-table">
+                <thead><tr><th>文件名</th><th>路径</th><th>类型</th></tr></thead>
+                <tbody id="m5-paths-tbody"><tr><td colspan="3" class="ot-td-empty">等待提取...</td></tr></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== 模块6：任务中心 ==================== -->
+    <div id="mod6" class="ot-clay-panel">
+      <div class="ot-clay-task-center">
+        <div class="ot-clay-task-header">
+          <div class="ot-clay-task-tabs">
+            <button class="ot-clay-task-tab active" onclick="switchTaskTab('all')">全部</button>
+            <button class="ot-clay-task-tab" onclick="switchTaskTab('success')">✅ 成功</button>
+            <button class="ot-clay-task-tab" onclick="switchTaskTab('fail')">❌ 失败</button>
+          </div>
+          <button class="ot-clay-btn ot-clay-btn-ghost ot-clay-btn-sm" onclick="clearAllTasks()">
+            <span>🗑️</span> 清空记录
+          </button>
+        </div>
+        <div class="ot-clay-task-list" id="task-list">
+          <div class="ot-clay-task-empty">
+            <span class="ot-empty-icon">📋</span>
+            <p>暂无任务记录</p>
+            <span class="ot-empty-hint">执行任务后将在此显示历史记录</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 帮助弹窗 -->
+<div class="ot-clay-modal" id="help-modal" style="display:none">
+  <div class="ot-clay-modal-overlay" onclick="closeHelp()"></div>
+  <div class="ot-clay-modal-content ot-clay-modal-lg">
+    <div class="ot-clay-modal-header">
+      <h3>📖 使用指南</h3>
+      <button class="ot-clay-modal-close" onclick="closeHelp()">✕</button>
+    </div>
+    <div class="ot-clay-modal-body">
+      <div class="ot-help-section">
+        <h4>🌐 远程使用说明</h4>
+        <p>本工具运行在部署服务器上，<strong>无法直接读写你本机磁盘</strong>。所有需要"操作某个文件夹"的功能，都请<strong>先把该文件夹压缩成 zip</strong> 上传；处理完成后结果会以 <strong>zip 下载</strong> 回到你的电脑。提取清单/路径类功能只回传清单，不下载文件本体。</p>
+      </div>
+      <div class="ot-help-section">
+        <h4>📁 批量创建</h4>
+        <p><strong>建文件夹/文件：</strong>上传包含名称的Excel，指定列标题和目标子目录（相对，留空=根目录），即可批量生成。支持多级子目录（如：2024/Q1）。</p>
+        <p><strong>建分表：</strong>上传需要加表的Excel（可多选），批量为它们新建工作表，可选复制模板内容和格式。</p>
+      </div>
+      <div class="ot-help-section">
+        <h4>🔍 提取清单</h4>
+        <p>上传文件夹 zip，提取其中的文件/文件夹名称，支持递归和按后缀筛选；结果可导出为 Excel/CSV 清单（下载回本地）。</p>
+      </div>
+      <div class="ot-help-section">
+        <h4>✏️ 批量改名</h4>
+        <p><strong>简单替换：</strong>上传文件夹 zip，批量替换文件名中的特定文字。</p>
+        <p><strong>Excel对照：</strong>上传文件夹 zip + 对照表（"原文件名"/"新文件名"两列），批量重命名；结果 zip 下载。</p>
+      </div>
+      <div class="ot-help-section">
+        <h4>📊 Excel专项</h4>
+        <p><strong>单元格替换 / 转PDF：</strong>上传含Excel的文件夹 zip 处理；转PDF 与单元格替换需<strong>服务器装有 Microsoft Office</strong>。</p>
+        <p><strong>删除分表：</strong>上传含Excel的文件夹 zip，按分表名称批量删除工作表。</p>
+      </div>
+      <div class="ot-help-section">
+        <h4>📦 文件搬运</h4>
+        <p>上传<strong>源文件夹 zip</strong> + 映射Excel，按映射把文件整理到对应子文件夹；结果（整理后的结构）以 zip 下载。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 环境检测弹窗 -->
+<div class="ot-clay-modal" id="env-modal" style="display:none">
+  <div class="ot-clay-modal-overlay" onclick="closeEnv()"></div>
+  <div class="ot-clay-modal-content">
+    <div class="ot-clay-modal-header">
+      <h3>⚙️ 环境检测</h3>
+      <button class="ot-clay-modal-close" onclick="closeEnv()">✕</button>
+    </div>
+    <div class="ot-clay-modal-body" id="env-modal-body">
+      <div class="ot-env-item"><span class="ot-env-status ot-env-checking">⏳</span> 正在检测...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='office_tools/script.js') }}"></script>
+<script src="{{ url_for('static', filename='office_tools/ai_office.js') }}"></script>
+{% endblock %}

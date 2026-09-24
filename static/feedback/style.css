@@ -1,0 +1,105 @@
+/* 反馈模块样式（全局 static/feedback/style.css）。
+   白天用写死主色 #6d5dfc；黑夜跟随展厅灯光主题（限定 body.dark）。 */
+.feedback-page { --primary: #6d5dfc; max-width: 920px; margin: 0 auto; padding: 24px 20px 60px; }
+body.dark .feedback-page { --primary: var(--theme-primary); }
+
+.fb-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.fb-header h2 { margin: 0; font-size: 22px; color: #1f2937; }
+body.dark .fb-header h2 { color: #e6edf6; }
+.fb-actions { display: flex; gap: 10px; align-items: center; }
+.fb-sub { color: #6b7280; font-size: 13px; margin: 8px 0 20px; }
+body.dark .fb-sub { color: #9aa7b8; }
+
+.fb-btn, .fb-btn-primary {
+  border: 1px solid #d1d5db; background: #fff; color: #374151;
+  padding: 8px 14px; border-radius: 10px; font-size: 13px; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+body.dark .fb-btn { background: #1b2230; color: #cdd7e5; border-color: #2c3545; }
+.fb-btn-primary {
+  background: var(--primary); color: #fff; border-color: transparent;
+  box-shadow: 0 2px 10px rgba(109,93,252,.25);
+}
+body.dark .fb-btn-primary { color: #0b0e14; box-shadow: 0 0 14px var(--theme-glow-soft); }
+.fb-btn-primary:hover { filter: brightness(1.05); }
+
+.fb-list { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+.fb-card {
+  border: 1px solid #e5e7eb; background: #fff; border-radius: 14px; padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(16,24,40,.04);
+}
+body.dark .fb-card { background: #161c27; border-color: #2a3342; }
+.fb-card-admin { border-left: 3px solid var(--primary); }
+.fb-card-head { display: flex; align-items: center; gap: 10px; }
+.fb-card-title { font-size: 16px; font-weight: 600; color: #111827; }
+body.dark .fb-card-title { color: #e9eef5; }
+.fb-card-meta { font-size: 12px; color: #6b7280; margin: 6px 0; }
+body.dark .fb-card-meta { color: #93a1b3; }
+.fb-card-content {
+  white-space: pre-wrap; word-break: break-word; color: #374151; font-size: 14px;
+  line-height: 1.6; background: #f9fafb; border-radius: 8px; padding: 10px 12px;
+}
+body.dark .fb-card-content { color: #c4cdda; background: #0f141d; }
+.fb-card-foot { margin-top: 10px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.fb-link { color: var(--primary); font-size: 13px; text-decoration: none; }
+.fb-devreply { margin-top: 10px; background: #eef2ff; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #3730a3; }
+body.dark .fb-devreply { background: #1c2540; color: #b9c4ff; }
+.fb-empty { color: #9ca3af; font-size: 14px; text-align: center; padding: 30px 0; }
+
+.fb-type { font-size: 12px; padding: 2px 9px; border-radius: 999px; font-weight: 600; }
+.fb-type-bug { background: #fee2e2; color: #b91c1c; }
+.fb-type-suggestion { background: #fef3c7; color: #b45309; }
+.fb-type-idea { background: #ede9fe; color: #6d28d9; }
+body.dark .fb-type-bug { background: #3a1d1d; color: #fca5a5; }
+body.dark .fb-type-suggestion { background: #3a2f17; color: #fcd34d; }
+body.dark .fb-type-idea { background: #2a2240; color: #c4b5fd; }
+
+/* 筛选与表单控件 */
+.fb-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.fb-select, .fb-input {
+  border: 1px solid #d1d5db; background: #fff; color: #374151; border-radius: 9px;
+  padding: 8px 10px; font-size: 13px; font-family: inherit;
+}
+body.dark .fb-select, body.dark .fb-input { background: #131a24; color: #d6deea; border-color: #2c3545; }
+.fb-input { width: 100%; box-sizing: border-box; resize: vertical; }
+.fb-field { margin-bottom: 12px; }
+.fb-field label { display: block; font-size: 12px; color: #6b7280; margin-bottom: 5px; }
+body.dark .fb-field label { color: #93a1b3; }
+
+/* 提交表单卡片 */
+.fb-submit-card { margin-bottom: 22px; }
+.fb-form-title { margin: 0 0 16px; font-size: 17px; }
+.fb-modal-msg { color: #dc2626; font-size: 12px; min-height: 16px; margin-top: 6px; }
+body.dark .fb-modal-msg { color: #fca5a5; }
+.fb-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+
+/* 详情页管理区 */
+.fb-detail { border: 1px solid #e5e7eb; background: #fff; border-radius: 14px; padding: 18px 20px; margin-top: 14px; }
+body.dark .fb-detail { background: #161c27; border-color: #2a3342; }
+.fb-detail-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.fb-detail-title { margin: 0; font-size: 19px; color: #111827; }
+body.dark .fb-detail-title { color: #e9eef5; }
+.fb-admin-box { margin-top: 16px; border-top: 1px dashed #e5e7eb; padding-top: 14px; }
+body.dark .fb-admin-box { border-top-color: #2a3342; }
+.fb-admin-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
+.fb-admin-row label { font-size: 12px; color: #6b7280; }
+body.dark .fb-admin-row label { color: #93a1b3; }
+.fb-admin-row .fb-reply-input { flex: 1; min-width: 220px; }
+.fb-admin-msg { font-size: 12px; color: #16a34a; }
+body.dark .fb-admin-msg { color: #4ade80; }
+
+/* 导航角标 */
+.fb-badge {
+  background: #ef4444; color: #fff; font-size: 11px; line-height: 1;
+  min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-left: 6px; vertical-align: middle;
+}
+
+/* 轻提示 toast */
+.fb-toast {
+  position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%);
+  background: #111827; color: #fff; padding: 10px 18px; border-radius: 10px;
+  font-size: 13px; z-index: 1100; box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+body.dark .fb-toast { background: #e6edf6; color: #111827; }

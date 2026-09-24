@@ -1,0 +1,98 @@
+# Python虚拟环境
+.venv/
+venv/
+.venv
+venv
+.venv/**
+
+# IDE缓存
+.idea/
+.vscode/
+
+# Python编译缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 日志文件
+logs/
+*.log
+
+# AI模型、上传目录
+models/
+uploads/
+
+# 向量库数据
+ai_vector_store/
+vector_data/
+
+# 数据库导出
+db_export/
+
+# 运行产物
+*.tmp
+
+# 数据库文件（不纳入版本）
+book_manager.db
+
+# workbuddy记忆、截图素材，全部忽略
+.workbuddy/
+_theme_shots/
+_verify_shots/
+
+# 截图 / 诊断素材统一目录（本地保留，不入库）
+_shots/
+_ai_qa_preview/
+_glow_shots/
+_privacy_shots/
+_diag/
+
+# 本地诊断/预览残留（保留本地，不入库）
+_archive/
+
+# 真实运行配置（含内网地址/密钥，本地保留不入库）；安全模板见 config/modules.yaml.example
+config/modules.yaml
+
+# 工作自动化流程：公司私有流程文件不入库（框架已开源，示例见 modules/toolbox/automation/examples/）
+# flows/__init__.py 保留入库，方便克隆者直接往 flows/ 放自己的流程
+# example_flow.py 是通用示例（无任何公司私有信息），放行入库：
+# 克隆下来就能被 get_flows() 发现、开箱可跑，也让回归测试不依赖私有流程。
+modules/toolbox/automation/flows/*.py
+!modules/toolbox/automation/flows/__init__.py
+!modules/toolbox/automation/flows/example_flow.py
+
+# 面试准备资料（个人求职资产，不进技术仓库）
+interview_prep/
+
+# 浏览器自动化缓存（Playwright/Agent 浏览器 profile，含 cookie/session，体积大且含凭证）
+_pw_browsers/
+
+# AI 任务中心的运行期产物（生成的图表等，不入库）
+static/ai_agent/out/
+# 运行期临时密钥（首次启动自动生成，已在 .gitignore 内不入库）
+config/.secret_key
+
+# 临时清理区：诊断脚本、一次性截图、过期日志等短期产物（不入 git，定期手工清）
+_cleanup/
+
+# 工具箱/通用运行期临时目录（上传文件、中间产物、打包前的暂存）
+temp/
+
+# curl/httpie 导出的 cookie 文件（含 session token，绝不能入库）
+# 曾用路径：根目录 cj.txt / cj2.txt —— 发现即删，不要再提交
+*.cookie.txt
+cj*.txt
+
+# ---------- 开源整理（2026-09-24） ----------
+# 运行期数据目录（当前为空，防止以后写入运行态数据被误提交）
+.rundata/
+
+# 首次初始化生成的随机管理员初始密码（凭据，绝不能入库）
+config/.init_admin_pwd
+
+# 根目录的一次性脚本：正式回归脚本已统一归入 tests/（_t_ai_staff / _t_orphan /
+# _t_tsv_parse / _bench_qa 已迁移），根目录这些是同名历史副本，不入库
+/_t_*.py
+/_t_*.js
+/_bench_qa_report.md

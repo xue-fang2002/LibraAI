@@ -1,0 +1,991 @@
+{% extends "layout_base.html" %}
+{% block page_title %}AI 智能问答{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_markdown.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_qa_ui.css') }}">
+<style>
+    /* ===== 新拟态（Neumorphism）配色变量 ===== */
+    :root {
+        --nm-bg: #e8ecf1;
+        --nm-shadow-dark: #c8ced8;
+        --nm-shadow-light: #ffffff;
+        --nm-text: #2c3e50;
+        --nm-text-sub: #5d6d7e;
+        --nm-accent: #6c8cbc;
+        /* 资料「展开 ▾」原始切片开关：0=隐藏（当前），1=恢复显示 */
+        --src-expand: 0;
+    }
+    body.dark {
+        --nm-bg: #1a1e26;
+        --nm-shadow-dark: #0c0f16;
+        --nm-shadow-light: #282d38;
+        --nm-text: #e8edf5;
+        --nm-text-sub: #9aa4b8;
+        --nm-accent: #7a9cc6;
+    }
+    .wrap {
+        display: flex;
+        flex-direction: column;
+        /* 用 min-height 而非 height：内容（hero+提示卡+对话区300+控件）高于视口时，
+           面板随内容增高，避免 bar/思维/输入行溢出到 .wrap 背景之外（“各部分分离”）。
+           高度充足时 min-height 撑满，chat-box 的 flex:1 仍会把控件压到底部。 */
+        min-height: 100%;
+        padding: 40px 48px;
+        gap: 20px;
+        background: var(--nm-bg);
+        color: var(--nm-text);
+        transition: background 0.3s, color 0.3s;
+    }
+    .hero {
+        text-align: center;
+        padding-top: 20px;
+    }
+    .hero-title {
+        font-size: 42px;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--theme-primary, #00f0ff), var(--theme-accent, #b967ff));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+    body:not(.dark) .hero-title {
+        background: linear-gradient(135deg, #1e5bc9, #8b5cf6);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .hero-sub {
+        color: var(--nm-text-sub);
+        font-size: 15px;
+    }
+    body.dark .hero-sub { color: var(--nm-text-sub); }
+
+    /* chat-box：内凹容器 */
+    .chat-box {
+        flex: 1;
+        min-height: 300px;
+        max-height: calc(100vh - 400px);
+        overflow-y: auto;
+        background: var(--nm-bg);
+        border-radius: 24px;
+        border: none;
+        box-shadow: inset 6px 6px 14px var(--nm-shadow-dark), inset -6px -6px 14px var(--nm-shadow-light);
+        padding: 24px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        transition: background 0.3s, box-shadow 0.3s;
+    }
+    body.dark .chat-box {
+        background: var(--nm-bg);
+        /* 亮侧高光边上叠加一条很淡的主题色内描边，跟随灯光颜色（小而淡，不抢戏） */
+        box-shadow:
+            inset 6px 6px 14px var(--nm-shadow-dark),
+            inset -6px -6px 14px var(--nm-shadow-light),
+            inset -2px -2px 8px var(--theme-glow-soft);
+    }
+    /* 空状态：chat-box 内居中，避免「没问答时太空」 */
+    .chat-empty {
+        margin: auto;
+        display: flex; flex-direction: column; align-items: center; gap: 12px;
+        text-align: center; padding: 30px; color: var(--nm-text-sub);
+    }
+    .chat-empty-icon {
+        width: 72px; height: 72px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 34px; color: var(--nm-accent);
+        background: var(--nm-bg);
+        box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+    }
+    .chat-empty-title { font-size: 17px; font-weight: 600; color: var(--nm-text); }
+    .chat-empty-sub { font-size: 13px; color: var(--nm-text-sub); }
+    .msg {
+        display: flex;
+        gap: 12px;
+        max-width: 85%;
+    }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    /* avatar：凸起圆形 */
+    .msg .avatar {
+        width: 38px; height: 38px; border-radius: 50%;
+        flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        background: var(--nm-bg);
+        box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+        color: var(--nm-text-sub);
+        transition: background 0.3s, box-shadow 0.3s;
+    }
+    .msg.user .avatar { color: var(--nm-accent); }
+    body.dark .msg .avatar {
+        background: var(--nm-bg);
+        box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+        color: var(--nm-text-sub);
+    }
+    body.dark .msg.user .avatar { color: var(--nm-accent); }
+    /* bubble：凸起软卡片 */
+    .bubble {
+        padding: 12px 16px;
+        border-radius: 18px;
+        line-height: 1.65;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 14px;
+        background: var(--nm-bg);
+        box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+        border: none;
+        color: var(--nm-text);
+        transition: background 0.3s, box-shadow 0.3s, color 0.3s;
+    }
+    .msg.ai .bubble {
+        background: var(--nm-bg);
+        box-shadow: 5px 5px 12px var(--nm-shadow-dark), -5px -5px 12px var(--nm-shadow-light);
+        color: var(--nm-text);
+        border: none;
+    }
+    body.dark .msg.ai .bubble {
+        background: var(--nm-bg);
+        box-shadow: 5px 5px 12px var(--nm-shadow-dark), -5px -5px 12px var(--nm-shadow-light);
+        color: var(--nm-text);
+        border: none;
+    }
+    .msg.user .bubble {
+        background: #d4e0f0;
+        box-shadow: 5px 5px 12px var(--nm-shadow-dark), -5px -5px 12px var(--nm-shadow-light);
+        color: var(--nm-text);
+        border: none;
+    }
+    body.dark .msg.user .bubble {
+        background: #2a3a50;
+        box-shadow: 5px 5px 12px var(--nm-shadow-dark), -5px -5px 12px var(--nm-shadow-light);
+        color: var(--nm-text);
+    }
+    .input-row {
+        display: flex;
+        gap: 12px;
+    }
+    /* textarea：内凹输入 */
+    .input-row textarea {
+        flex: 1;
+        padding: 14px 18px;
+        border-radius: 18px;
+        border: none;
+        background: var(--nm-bg);
+        box-shadow: inset 6px 6px 14px var(--nm-shadow-dark), inset -6px -6px 14px var(--nm-shadow-light);
+        resize: none;
+        height: 72px;
+        font-size: 14px;
+        outline: none;
+        transition: all 0.25s ease;
+        font-family: inherit;
+        color: var(--nm-text);
+    }
+    .input-row textarea:focus {
+        box-shadow: inset 6px 6px 14px var(--nm-shadow-dark), inset -6px -6px 14px var(--nm-shadow-light), 0 0 0 2px rgba(108, 140, 188, 0.25);
+        border-color: transparent;
+    }
+    body.dark .input-row textarea {
+        background: var(--nm-bg);
+        /* 输入区亮侧同样叠一条淡主题色内描边，与主容器一致 */
+        box-shadow:
+            inset 6px 6px 14px var(--nm-shadow-dark),
+            inset -6px -6px 14px var(--nm-shadow-light),
+            inset -2px -2px 10px var(--theme-glow-soft);
+        color: var(--nm-text);
+    }
+    body.dark .input-row textarea:focus {
+        box-shadow: inset 6px 6px 14px var(--nm-shadow-dark), inset -6px -6px 14px var(--nm-shadow-light), 0 0 0 2px rgba(122, 156, 198, 0.20);
+    }
+    /* send-btn：主题色主行动按钮（唯一彩色元素；用户要求彩色，破例带彩色光晕） */
+    .send-btn {
+        min-width: 100px;
+        padding: 0 22px;
+        border-radius: 18px;
+        border: none;
+        background: var(--nm-accent);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        box-shadow: 0 7px 18px -4px color-mix(in srgb, var(--nm-accent) 55%, transparent),
+                    4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+    .send-btn:hover:not(:disabled) {
+        transform: translateY(-1px);
+        filter: brightness(1.07);
+        box-shadow: 0 11px 24px -4px color-mix(in srgb, var(--nm-accent) 60%, transparent),
+                    8px 8px 16px var(--nm-shadow-dark), -8px -8px 16px var(--nm-shadow-light);
+    }
+    .send-btn:active:not(:disabled) {
+        transform: translateY(1px);
+        box-shadow: inset 4px 4px 10px rgba(0,0,0,0.20), inset -2px -2px 6px rgba(255,255,255,0.12);
+    }
+    .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: var(--nm-bg);
+        color: var(--nm-text-sub);
+        box-shadow: inset 4px 4px 10px var(--nm-shadow-dark), inset -4px -4px 10px var(--nm-shadow-light);
+    }
+    /* 暗色下主题色偏亮，改用深色文字保证对比度 */
+    body.dark .send-btn { color: #0e1116; }
+    /* 思维/速度/清空对话同一行：组分隔线 */
+    .bar-divider {
+        width: 1px; height: 16px; margin: 0 6px;
+        background: var(--nm-shadow-dark); opacity: 0.35; flex: none;
+    }
+    .think-row .clear-btn { flex: none; }
+    /* clear-btn：凸起小按钮 */
+    .clear-btn {
+        border: none; background: var(--nm-bg);
+        color: var(--nm-text-sub); cursor: pointer;
+        font-size: 12px; padding: 6px 14px;
+        border-radius: 10px;
+        box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+        transition: all 0.2s ease;
+    }
+    .clear-btn:hover { box-shadow: inset 4px 4px 10px var(--nm-shadow-dark), inset -4px -4px 10px var(--nm-shadow-light); color: var(--nm-text); }
+    body.dark .clear-btn { background: var(--nm-bg); box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light); color: var(--nm-text-sub); }
+    body.dark .clear-btn:hover { box-shadow: inset 4px 4px 10px var(--nm-shadow-dark), inset -4px -4px 10px var(--nm-shadow-light); color: var(--nm-text); }
+    .think-row {
+        display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+        font-size: 12px; margin: 8px 0 4px; color: var(--nm-text-sub);
+    }
+    body.dark .think-row { color: var(--nm-text-sub); }
+    .think-row .think-label { white-space: nowrap; }
+    /* 分段控件外框：内凹胶囊，把同组选项包在一起 */
+    .seg {
+        display: inline-flex; gap: 4px; padding: 5px;
+        border-radius: 12px; background: var(--nm-bg);
+        box-shadow: inset 3px 3px 7px var(--nm-shadow-dark), inset -3px -3px 7px var(--nm-shadow-light);
+    }
+    body.dark .seg { background: var(--nm-bg); box-shadow: inset 3px 3px 7px var(--nm-shadow-dark), inset -3px -3px 7px var(--nm-shadow-light); }
+    /* think-btn / speed-btn：嵌在 .seg 内，默认扁平透明；选中=凸起+主题色 */
+    .think-btn, .speed-btn {
+        border: none; background: transparent; color: var(--nm-text-sub);
+        border-radius: 9px; padding: 6px 14px; cursor: pointer;
+        font-size: 12px; transition: all 0.15s ease; font-weight: 500;
+        box-shadow: none;
+    }
+    .think-btn:hover:not(.active), .speed-btn:hover:not(.active) {
+        color: var(--nm-text);
+        box-shadow: inset 2px 2px 5px var(--nm-shadow-dark), inset -2px -2px 5px var(--nm-shadow-light);
+    }
+    .think-btn.active, .speed-btn.active {
+        background: var(--nm-bg);
+        box-shadow: 4px 4px 9px var(--nm-shadow-dark), -4px -4px 9px var(--nm-shadow-light);
+        color: var(--nm-accent); border: none;
+    }
+    body.dark .think-btn.active, body.dark .speed-btn.active { color: var(--nm-accent); background: var(--nm-bg); }
+    /* 引用校验徽标（异步：done 之后由 grounding 事件更新；通过时不显示，仅不通过时告警） */
+    .ground-badge { font-size: 12px; color: var(--nm-text-sub); padding: 6px 12px; }
+    .ground-badge.warn { color: #c0392b; }
+    .tip-card {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    }
+    /* tip：凸起卡片 */
+    .tip {
+        padding: 14px 16px; border-radius: 18px;
+        background: var(--nm-bg); border: none; cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease; font-size: 13px;
+        box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+    }
+    .tip:hover { transform: translateY(-2px); box-shadow: 8px 8px 18px var(--nm-shadow-dark), -8px -8px 18px var(--nm-shadow-light); }
+    .tip:active { transform: translateY(0); box-shadow: inset 4px 4px 10px var(--nm-shadow-dark), inset -4px -4px 10px var(--nm-shadow-light); }
+    body.dark .tip { background: var(--nm-bg); box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light); }
+    body.dark .tip:hover { box-shadow: 8px 8px 18px var(--nm-shadow-dark), -8px -8px 18px var(--nm-shadow-light); }
+    body.dark .tip:active { box-shadow: inset 4px 4px 10px var(--nm-shadow-dark), inset -4px -4px 10px var(--nm-shadow-light); }
+    .tip .q { font-weight: 600; margin-bottom: 4px; color: var(--nm-text); }
+    .tip .a { color: var(--nm-text-sub); font-size: 12px; }
+    body.dark .tip .a { color: var(--nm-text-sub); }
+    body.dark .tip .q { color: var(--nm-text); }
+    .hero-features {
+        display: flex; justify-content: center; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap;
+    }
+    /* feat-tag：内凹胶囊 */
+    .feat-tag {
+        padding: 4px 12px; border-radius: 999px; background: var(--nm-bg); font-size: 12px;
+        color: var(--nm-text-sub); border: none;
+        box-shadow: inset 2px 2px 5px var(--nm-shadow-dark), inset -2px -2px 5px var(--nm-shadow-light);
+    }
+    body.dark .feat-tag { background: var(--nm-bg); color: var(--nm-text-sub); box-shadow: inset 2px 2px 5px var(--nm-shadow-dark), inset -2px -2px 5px var(--nm-shadow-light); }
+    .feat-tag.mode-off { color: #c0392b; }
+    .feat-tag.mode-light { color: #b99013; }
+    .feat-tag.mode-full { color: #1e8449; }
+    /* ai-off：内凹面板 */
+    .ai-off {
+        text-align: center; padding: 40px; color: var(--nm-text-sub);
+        background: var(--nm-bg); border-radius: 20px; border: none;
+        box-shadow: inset 6px 6px 14px var(--nm-shadow-dark), inset -6px -6px 14px var(--nm-shadow-light);
+    }
+    body.dark .ai-off { background: var(--nm-bg); color: var(--nm-text-sub); box-shadow: inset 6px 6px 14px var(--nm-shadow-dark), inset -6px -6px 14px var(--nm-shadow-light); }
+    /* ---- 参考来源 卡片化 / 计数 / 引用角标（P2 UI 增强） ---- */
+    .src-wrap { display: flex; flex-direction: column; gap: 8px; }
+    .src-chip {
+        align-self: flex-start;
+        font-size: 12px; font-weight: 600;
+        padding: 3px 11px; border-radius: 999px;
+        background: var(--nm-bg); border: none;
+        color: var(--nm-accent);
+        margin-bottom: 2px;
+        box-shadow: inset 2px 2px 5px var(--nm-shadow-dark), inset -2px -2px 5px var(--nm-shadow-light);
+    }
+    body.dark .src-chip { background: var(--nm-bg); color: var(--nm-accent); box-shadow: inset 2px 2px 5px var(--nm-shadow-dark), inset -2px -2px 5px var(--nm-shadow-light); }
+    .src-card {
+        border: none;
+        border-radius: 12px; padding: 10px 12px;
+        background: var(--nm-bg);
+        cursor: pointer; transition: box-shadow .2s ease;
+        box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+    }
+    body.dark .src-card { background: var(--nm-bg); box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light); }
+    .src-card:hover { box-shadow: 8px 8px 18px var(--nm-shadow-dark), -8px -8px 18px var(--nm-shadow-light); }
+    body.dark .src-card:hover { box-shadow: 8px 8px 18px var(--nm-shadow-dark), -8px -8px 18px var(--nm-shadow-light); }
+    .src-card-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--nm-text); }
+    .src-idx { font-weight: 700; color: var(--nm-accent); }
+    body.dark .src-idx { color: var(--nm-accent); }
+    .src-book { font-weight: 600; color: var(--nm-text); }
+    .src-book-link {
+        font-weight: 600;
+        color: var(--nm-accent);
+        text-decoration: none;
+        border-bottom: none;
+        cursor: pointer;
+    }
+    .src-book-link:hover { text-decoration: underline; }
+    .src-open-hint { font-size: 12px; opacity: 0.65; cursor: pointer; }
+    body.dark .src-book-link { color: var(--nm-accent); }
+    .src-sec {
+        font-size: 12px; color: var(--nm-text-sub);
+        background: var(--nm-bg); padding: 1px 8px; border-radius: 8px;
+        box-shadow: inset 1px 1px 3px var(--nm-shadow-dark), inset -1px -1px 3px var(--nm-shadow-light);
+    }
+    body.dark .src-sec { color: var(--nm-text-sub); background: var(--nm-bg); box-shadow: inset 1px 1px 3px var(--nm-shadow-dark), inset -1px -1px 3px var(--nm-shadow-light); }
+    .src-toggle { margin-left: auto; font-size: 12px; color: var(--nm-accent); user-select: none; }
+    body.dark .src-toggle { color: var(--nm-accent); }
+    /* 资料展开开关：--src-expand 为 0 时由 JS 给 body 加 .src-expand-off，彻底隐藏原始切片 */
+    body.src-expand-off .src-toggle { display: none; }
+    body.src-expand-off .src-full { display: none !important; }
+    .src-preview { font-size: 13px; color: var(--nm-text-sub); margin-top: 6px; line-height: 1.6; }
+    body.dark .src-preview { color: var(--nm-text-sub); }
+    .src-full {
+        font-size: 13px; color: rgba(0,0,0,0.78); margin-top: 8px; line-height: 1.7;
+        white-space: pre-wrap; word-break: break-word;
+        border-top: none; padding-top: 10px;
+        /* 新拟态分隔线：用内阴影凹槽替代硬/虚线边框，与整体质感统一 */
+        box-shadow: inset 0 1px 0 #ffffff, inset 0 2px 5px -2px #b6bdc9;
+    }
+    body.dark .src-full { color: rgba(220,240,255,0.85); box-shadow: inset 0 1px 0 #2a2f3a, inset 0 2px 5px -2px #05070b; }
+    .src-flash { animation: srcflash 1.2s ease; }
+    @keyframes srcflash {
+        0% { box-shadow: 0 0 0 0 var(--theme-primary, #00f0ff); }
+        100% { box-shadow: 0 0 0 8px rgba(0,240,255,0); }
+    }
+    .cite-ref {
+        color: #1565c0; font-weight: 600; font-size: 0.9em; cursor: pointer;
+    }
+    body.dark .cite-ref { color: var(--theme-primary, #6fe9ff); }
+    .src-warn {
+        background: rgba(231,76,60,0.10);
+        border: 1px solid rgba(231,76,60,0.35);
+        color: #c0392b;
+    }
+    body.dark .src-warn { background: rgba(231,76,60,0.18); color: #ff9b8a; }
+    @media (max-width: 900px) {
+        .wrap { padding: 20px; }
+        .hero-title { font-size: 28px; }
+        .tip-card { grid-template-columns: repeat(2, 1fr); }
+        .msg { max-width: 95%; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="wrap">
+    <div class="hero">
+        <div class="hero-title">💬 AI 智能问答</div>
+        <div class="hero-sub">你可以问我任何问题 —— 无论是工作、学习、生活，还是关于图书馆里的书籍</div>
+        <div class="hero-features">
+            {% set m = (ai.mode or 'off') %}
+            <span class="feat-tag mode-{{ m }}">
+                模式：{{ m.upper() }}
+                {% if m == 'off' %}（AI关闭）
+                {% elif m == 'light' %}（轻量：摘要/标签/检索）
+                {% else %}（完整：问答+深度分析）{% endif %}
+            </span>
+            {% if ai.summary %}<span class="feat-tag">✅ AI 摘要</span>{% endif %}
+            {% if ai.vector_search %}<span class="feat-tag">✅ 向量检索</span>{% endif %}
+            {% if ai.qa %}<span class="feat-tag">✅ 深度问答</span>{% endif %}
+            {% if ai.security_lock %}<span class="feat-tag" style="background:rgba(231,76,60,0.10);color:#c0392b;">🔒 安全锁</span>{% endif %}
+        </div>
+    </div>
+
+    {% if ai.mode == 'off' %}
+    <div class="chat-box ai-off">
+        <div style="font-size: 48px; margin-bottom: 16px;">🧊</div>
+        <div style="font-size: 16px; margin-bottom: 8px;">AI 功能当前处于关闭状态</div>
+        <div style="font-size: 13px; opacity: 0.7;">请前往「系统配置 → AI配置」启用 light 或 full 模式</div>
+    </div>
+    {% else %}
+
+    {% if not history %}
+    <div class="tip-card">
+        <div class="tip" data-q="给我几个提升效率的学习方法，简短一些。">
+            <div class="q">🎯 如何高效学习？</div>
+            <div class="a">推荐几个实用的提升方法</div>
+        </div>
+        <div class="tip" data-q="请给我推荐一本科幻领域的经典图书，简单说明理由。">
+            <div class="q">📚 推荐一本科幻好书</div>
+            <div class="a">结合图书馆的藏书进行推荐</div>
+        </div>
+        <div class="tip" data-q="写一段关于科技创新的新年寄语，100字以内。">
+            <div class="q">✍️ 写作助手示例</div>
+            <div class="a">生成一段关于科技创新的文案</div>
+        </div>
+        <div class="tip" data-q="Python 中 decorator 的作用是什么？举个简单例子。">
+            <div class="q">💻 编程问题</div>
+            <div class="a">解释 Python 装饰器并举例</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="chat-box" id="chatBox">
+        {% for msg in history %}
+        <div class="msg {{ 'user' if msg.role == 'user' else 'ai' }}">
+            <div class="avatar">{{ '🌌' if msg.role == 'user' else '🤖' }}</div>
+            <div class="bubble">{{ msg.content }}</div>
+        </div>
+        {% endfor %}
+        {% if not history %}
+        <div class="chat-empty" id="chatEmpty">
+            <div class="chat-empty-icon">🤖</div>
+            <div class="chat-empty-title">准备就绪，随时为你解答</div>
+            <div class="chat-empty-sub">输入你的问题，开启一段智能对话吧</div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="think-row">
+        <span class="think-label">思维</span>
+        <div class="seg">
+            <button type="button" class="think-btn active" id="modeMixed" data-mode="mixed">🌀 混合标注</button>
+            <button type="button" class="think-btn" id="modeStrict" data-mode="strict">📚 严格依据资料</button>
+        </div>
+        <span class="bar-divider"></span>
+        <span class="think-label">速度</span>
+        <div class="seg">
+            <button type="button" class="speed-btn active" data-profile="">🛠 跟随全局</button>
+            <button type="button" class="speed-btn" data-profile="high">🎯 高质量</button>
+            <button type="button" class="speed-btn" data-profile="balanced">⚖️ 均衡</button>
+        </div>
+        <button type="button" class="clear-btn" id="clearBtn" style="margin-left:auto;">🗑 清空对话</button>
+    </div>
+
+    <div class="input-row">
+        <textarea id="taMsg" placeholder="请输入你的问题...（Ctrl+Enter 快速发送）"></textarea>
+        <button class="send-btn ai-think-btn" id="sendBtn">🚀 发送</button>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='vendor/ai-md/marked.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/ai-md/highlight.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/ai-md/purify.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ai_markdown.js') }}"></script>
+<script>
+(function(){
+    const chatBox = document.getElementById('chatBox');
+    const ta = document.getElementById('taMsg');
+    const sendBtn = document.getElementById('sendBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    if (!chatBox) return;
+
+    // 资料「展开 ▾」原始切片开关：读取 CSS 变量 --src-expand（由 :root 控制）。
+    // 设为 0 即彻底隐藏展开功能（保留缩略预览），无需改其它代码即可恢复。
+    const SRC_EXPAND_ENABLED = (getComputedStyle(document.documentElement)
+        .getPropertyValue('--src-expand').trim() || '1') !== '0';
+    if (!SRC_EXPAND_ENABLED) document.body.classList.add('src-expand-off');
+
+    function scrollBottom(){ chatBox.scrollTop = chatBox.scrollHeight; }
+    scrollBottom();
+
+    // AI 头像固定为 🤖（不随思考模式变化）
+    function aiAvatar(){
+        return '🤖';
+    }
+    // 用户提问头像随当前思考模式变换：与模式按钮一致（混合🌀 / 严格📚）
+    function userAvatar(){
+        const b = document.querySelector('.think-btn.active');
+        return (b && b.dataset.mode === 'strict') ? '📚' : '🌀';
+    }
+
+    function appendMsg(role, text) {
+        const d = document.createElement('div');
+        d.className = 'msg ' + role;
+        d.innerHTML = `<div class="avatar">${role==='user'?userAvatar():aiAvatar()}</div><div class="bubble">${text.replace(/</g,'&lt;')}</div>`;
+        chatBox.appendChild(d);
+        scrollBottom();
+    }
+
+    // 未登录提示：用真实 <a> 链接（不走 appendMsg 的转义），点击可去登录页
+    function appendLoginPrompt() {
+        const d = document.createElement('div');
+        d.className = 'msg ai';
+        d.innerHTML = '<div class="avatar">'+aiAvatar()+'</div><div class="bubble">🔐 请先'
+            + '<a href="/login?next=/home/" style="color:var(--primary,#6d5dfc);text-decoration:underline">登录</a>'
+            + '后使用 AI 问答。</div>';
+        chatBox.appendChild(d);
+        scrollBottom();
+    }
+
+    // ---- P2 UI 增强辅助函数（顶层，供 send 内闭包与全局点击委托共用） ----
+    function escapeHtml(s) {
+        return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    // 把答案中的 [n] 引用标记渲染为可点击角标（点击定位到对应来源卡片）
+    function highlightCitations(text) {
+        return escapeHtml(text).replace(/\[(\d+)\]/g, function (_, n) {
+            return '<span class="cite-ref" data-cite="' + n + '">[' + n + ']</span>';
+        });
+    }
+    // ---------- AI 答案排版：Markdown 渲染 + [n] 引用角标 ----------
+    // 只改变呈现方式，不改动原文一个字。AiMarkdown 缺失时回退到旧的
+    // highlightCitations（纯文本 + 角标），保证不会白屏。
+    function renderAnswer(bubble, text) {
+        if (!bubble) return bubble;
+        const body = text || '（无响应内容）';
+        if (window.AiMarkdown) {
+            bubble.classList.add('ai-md');
+            window.AiMarkdown.renderInto(bubble, body);
+            window.AiMarkdown.highlightCitations(bubble);
+        } else {
+            bubble.innerHTML = highlightCitations(body);
+        }
+        return bubble;
+    }
+
+    // 以「答案」形态追加一条 AI 气泡（带排版 + 引用高亮），返回 .bubble 节点
+    function appendAnswerHtml(text) {
+        const d = document.createElement('div');
+        d.className = 'msg ai';
+        d.innerHTML = '<div class="avatar">'+aiAvatar()+'</div><div class="bubble"></div>';
+        chatBox.appendChild(d);
+        scrollBottom();
+        return renderAnswer(d.querySelector('.bubble'), text);
+    }
+
+    // ---------- 思考中气泡（旋转法阵 + 分阶段文案 + 呼吸点） ----------
+    const THINK_STAGES = ['正在检索资料库…', '正在组织语言…', '正在润色答案…'];
+    let thinkNode = null, thinkTimer = null;
+    function showThinking() {
+        if (thinkNode) return;
+        const d = document.createElement('div');
+        d.className = 'msg ai';
+        d.innerHTML = '<div class="avatar">'+aiAvatar()+'</div>' +
+            '<div class="ai-thinking"><span class="ai-think-orb"></span>' +
+            '<span class="ai-think-text">' + THINK_STAGES[0] + '</span>' +
+            '<span class="ai-think-dots"><i></i><i></i><i></i></span></div>';
+        chatBox.appendChild(d);
+        scrollBottom();
+        thinkNode = d;
+        let si = 0;
+        thinkTimer = setInterval(function () {
+            if (si >= THINK_STAGES.length - 1) return;
+            si += 1;
+            const el = thinkNode && thinkNode.querySelector('.ai-think-text');
+            if (el) el.textContent = THINK_STAGES[si];
+        }, 1500);
+    }
+    function stopThinking() {
+        if (thinkTimer) { clearInterval(thinkTimer); thinkTimer = null; }
+        if (thinkNode && thinkNode.parentNode) thinkNode.parentNode.removeChild(thinkNode);
+        thinkNode = null;
+    }
+    // 答案中的 [n] 角标 → 滚动并高亮对应来源卡片
+    chatBox && chatBox.addEventListener('click', function (e) {
+        const ref = e.target.closest && e.target.closest('.cite-ref');
+        if (!ref) return;
+        const n = ref.getAttribute('data-cite');
+        const card = document.getElementById('src-card-' + n);
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.add('src-flash');
+            setTimeout(function () { card.classList.remove('src-flash'); }, 1200);
+        }
+    });
+
+    async function send() {
+        const q = (ta.value || '').trim();
+        if (!q) return;
+        if (sendBtn.disabled) return;
+        const activeModeBtn = document.querySelector('.think-btn.active');
+        const mode = activeModeBtn ? activeModeBtn.dataset.mode : 'mixed';
+        // 速度档位：空串表示「跟随全局」，后端收到后回落系统配置
+        const activeSpeedBtn = document.querySelector('.speed-btn.active');
+        const profile = activeSpeedBtn ? (activeSpeedBtn.dataset.profile || '') : '';
+        const emptyEl = document.getElementById('chatEmpty');
+        if (emptyEl) emptyEl.remove();   // 首次提问移除空状态占位
+        appendMsg('user', q);
+        ta.value = '';
+        sendBtn.disabled = true;
+        sendBtn.classList.add('is-thinking');   // 玄幻思考态（共享样式）
+        sendBtn.textContent = '⏳ 思考中...';
+        showThinking();                          // 回答区思考气泡
+
+        const streamUrl = '{{ url_for("homepage.api_chat_stream") }}';
+        const normalUrl = '{{ url_for("homepage.api_chat") }}';
+        let aiBubble = null;          // 流式答案气泡的 .bubble 容器
+        let gotFinal = false;         // 是否已收到 done/answer（用于标记完成）
+        let sourcesRendered = false;  // 本轮来源是否已渲染（防止 SSE 重复渲染）
+        let turnGreeting = false;     // 本轮是否为问候直答（不显示「未引用原文」警告）
+
+        // 首次需要写答案时创建 AI 气泡，返回可追加文本的 .bubble 节点
+        function ensureBubble() {
+            if (aiBubble) return aiBubble;
+            stopThinking();                      // 首个字到达即撤掉「思考中」气泡
+            const d = document.createElement('div');
+            d.className = 'msg ai';
+            d.innerHTML = '<div class="avatar">'+aiAvatar()+'</div><div class="bubble"></div>';
+            chatBox.appendChild(d);
+            aiBubble = d.querySelector('.bubble');
+            scrollBottom();
+            return aiBubble;
+        }
+
+        // 渲染「参考来源」为独立气泡。
+        //  - 同一本书的多个 chunk 命中已在后端合并成一条（见 qa._merge_sources_by_book），
+        //    这里只负责把合并后的 pages/headings 渲染成单行，解决"同一文件反复写、占地方"。
+        //  - 源文含大量换行/空白，先压成单行再按词边界智能截断。
+        // 渲染「参考来源」为独立卡片（P2 增强）：
+        //   - 每本书一张卡片，头部书名 + 章节标签 + 预览 + 可展开全文；
+        //   - 顶部「已参考 N 个文档」结构化计数；
+        //   - 无来源时显示「⚠️ 答案未引用原文」警告。
+        // sourcesRendered 防止 SSE 的 sources 事件与 answer 事件重复渲染。
+        function renderSources(sources, opts) {
+            if (sourcesRendered) return;
+            if (!sources || !sources.length) {
+                // 问候直答：不显示「未引用原文」警告（本就无需引用）
+                if ((opts && opts.noWarn) || turnGreeting) { sourcesRendered = true; return; }
+                sourcesRendered = true;
+                const w = document.createElement('div');
+                w.className = 'msg ai';
+                w.innerHTML = '<div class="avatar">'+aiAvatar()+'</div><div class="bubble src-warn">⚠️ 该回答未引用任何文档原文，仅供参考</div>';
+                chatBox.appendChild(w);
+                scrollBottom();
+                return;
+            }
+            sourcesRendered = true;
+            const wrap = document.createElement('div');
+            wrap.className = 'msg ai';
+            wrap.innerHTML = '<div class="avatar">'+aiAvatar()+'</div><div class="src-wrap"></div>';
+            const container = wrap.querySelector('.src-wrap');
+
+            const chip = document.createElement('div');
+            chip.className = 'src-chip';
+            chip.textContent = '📚 已参考 ' + sources.length + ' 个文档';
+            container.appendChild(chip);
+
+            sources.forEach(function (s, i) {
+                const idx = i + 1;
+                const loc = s.book_name ? '《' + s.book_name + '》' : ('文档 ' + idx);
+                // 文件名可点击打开原文件：仅当后端返回 book_id 时渲染链接（通用逻辑，无单书特殊处理）
+                const bookHtml = s.book_id
+                    ? '<a class="src-book-link" href="/book/view/' + encodeURIComponent(s.book_id) + '" target="_blank" rel="noopener" title="点击打开原文件">' + escapeHtml(loc) + '</a><span class="src-open-hint" title="打开原文件">🔗</span>'
+                    : '<span class="src-book">' + escapeHtml(loc) + '</span>';
+                const heads = (s.headings && s.headings.length) ? s.headings
+                    : (s.heading ? [s.heading] : []);
+                // 现象3 修复：来源章节路径去重，避免「分支结构/变量与数据类型/
+                // 分支结构/变量与数据类型」这类重复。只保留每个唯一章节标题的首次出现；比较键
+                // 忽略前导编号（「2.1 分支结构」与「3.2 分支结构」视为同一标题），容错同名不同章
+                // 造成的视觉重复，同时仍最多保留 3 个真正不同的章节。
+                const _seenSec = Object.create(null);
+                const _dedupHeads = [];
+                heads.forEach(function (h) {
+                    var key = String(h == null ? '' : h).trim().replace(/^[\d.．、\s]+/, '').toLowerCase();
+                    if (!key || _seenSec[key]) return;
+                    _seenSec[key] = true;
+                    _dedupHeads.push(h);
+                });
+                const secLabel = _dedupHeads.length ? _dedupHeads.slice(0, 3).join(' / ')
+                    : (s.section ? s.section : '');
+                const preview = (s.text || '').replace(/\s+/g, ' ').trim();
+                const full = (s.full_text || preview || '').replace(/\s+/g, ' ').trim();
+                // 追加修复：预览行与章节标签 pill 讲的是同一段章节路径时只留其一。
+                // 后端 _merge_sources_by_book 在有 headings 时会把 text 覆盖成「标题 / 标题」，
+                // 而卡片头部 .src-sec pill 也渲染同一 headings → 同一路径被写两遍
+                //（如「循环结构 / 函数」pill + 「循环结构 / 函数」预览）。此处按归一化路径键比较，
+                // 重复则不再渲染预览行；无 headings（text 是正文片段）时预览行照常显示。
+                const showPreview = preview && secPathKey(preview) !== secPathKey(secLabel);
+
+                const card = document.createElement('div');
+                card.className = 'src-card';
+                card.id = 'src-card-' + idx;
+                card.innerHTML =
+                    '<div class="src-card-head">' +
+                        '<span class="src-idx">[' + idx + ']</span>' +
+                        bookHtml +
+                        (secLabel ? '<span class="src-sec">' + escapeHtml(secLabel) + '</span>' : '') +
+                        '<span class="src-toggle">展开 ▾</span>' +
+                    '</div>' +
+                    (showPreview ? '<div class="src-preview">' + escapeHtml(preview) + '</div>' : '') +
+                    '<div class="src-full" style="display:none">' + escapeHtml(full) + '</div>';
+                // 链接点击不触发卡片展开（阻止冒泡到 head 的 toggle 监听）
+                const linkEl = card.querySelector('.src-book-link');
+                if (linkEl) linkEl.addEventListener('click', function (e) { e.stopPropagation(); });
+                card.querySelector('.src-card-head').addEventListener('click', function () {
+                    if (!SRC_EXPAND_ENABLED) return;   // 开关关闭：彻底禁用「展开 ▾」原始切片
+                    const f = card.querySelector('.src-full');
+                    const t = card.querySelector('.src-toggle');
+                    if (f.style.display === 'none') { f.style.display = 'block'; t.textContent = '收起 ▴'; }
+                    else { f.style.display = 'none'; t.textContent = '展开 ▾'; }
+                });
+                container.appendChild(card);
+            });
+            chatBox.appendChild(wrap);
+            scrollBottom();
+        }
+
+        // 智能截断：尽可能按词/标点边界切，避免在英文单词中间截断（看起来像乱码）
+        function smartSlice(text, limit) {
+            if (text.length <= limit) return text;
+            const cut = text.slice(0, limit);
+            // 寻找最后一个空白/标点边界
+            const m = cut.match(/^[\s\S]*[\s,。.;:：、！？]/);
+            return (m ? m[0] : cut).trim();
+        }
+
+        // 章节路径归一化键：忽略前导编号（「2.1 分支结构」≡「分支结构」）
+        // 并去掉内部重复，用于判断来源卡片的「预览行」是否只是把「章节标签(pill)」又写了一遍。
+        function secPathKey(t) {
+            const seen = Object.create(null), out = [];
+            String(t == null ? '' : t).split(' / ').forEach(function (seg) {
+                const k = seg.trim().replace(/^[\d.．、\s]+/, '').toLowerCase();
+                if (!k || seen[k]) return;
+                seen[k] = true; out.push(k);
+            });
+            return out.join('|');
+        }
+
+        // 结束一轮问答：答案定稿即可恢复输入（不等异步引用校验）
+        function finishTurn(){
+            stopThinking();
+            sendBtn.disabled = false;
+            sendBtn.classList.remove('is-thinking');
+            sendBtn.textContent = '🚀 发送';
+        }
+
+        // 引用校验徽标：异步时先显示「校验中…」，随后由 grounding 事件更新。
+        //校验「通过」时不再展示任何徽标（避免对未覆盖问题的误导），
+        // 仅在「不通过」时保留 ⚠️ 告警。
+        let gBadgeWrap = null, gBadge = null;
+        function ensureGBadge(){
+            if (gBadge && gBadge.parentNode) return gBadge;
+            const d = document.createElement('div');
+            d.className = 'msg ai';
+            d.innerHTML = '<div class="avatar">' + aiAvatar() + '</div><div class="bubble ground-badge"></div>';
+            chatBox.appendChild(d);
+            gBadgeWrap = d;
+            gBadge = d.querySelector('.ground-badge');
+            scrollBottom();
+            return gBadge;
+        }
+        function setGBadge(text, cls){
+            const el = ensureGBadge();
+            if (!el) return;
+            el.className = 'bubble ground-badge ' + (cls || '');
+            el.textContent = text;
+            scrollBottom();
+        }
+        function clearGBadge(){
+            if (gBadgeWrap && gBadgeWrap.parentNode) gBadgeWrap.parentNode.removeChild(gBadgeWrap);
+            gBadgeWrap = null; gBadge = null;
+        }
+
+        // 处理单条 SSE 事件
+        function handleEvent(ev) {
+            if (!ev || !ev.type) return;
+            if (ev.type === 'sources') { renderSources(ev.sources); return; }
+            if (ev.type === 'status') {
+                // 进度提示（如「模型正忙，排队等待中…」）：用徽标条展示，生成流出/结束时自动清除
+                const t = (ev.text || '').trim();
+                if (t) setGBadge(t, 'pending');
+                return;
+            }
+            if (ev.type === 'delta') {
+                if (gBadge) clearGBadge();   // 正文开始流出，清除排队/进度提示
+                ensureBubble().textContent += (ev.text || '');
+                scrollBottom();
+                return;
+            }
+            if (ev.type === 'answer') {
+                clearGBadge();   // 整段答案到达，清除排队提示
+                if (ev.greeting) turnGreeting = true;   // 问候直答：无来源属正常
+                const b = ensureBubble();
+                renderAnswer(b, ev.text || '（无响应内容）');
+                renderSources(ev.sources);
+                gotFinal = true;
+                return;
+            }
+            if (ev.type === 'done') {
+                const b = ensureBubble();
+                if (ev.greeting) turnGreeting = true;   // 问候直答：无来源属正常
+                if (ev.answer) renderAnswer(b, ev.answer);   // 以完整答案定稿（含兜底标注）
+                renderSources(ev.sources);   // 自由生成等路径以 done 收尾，来源需在此渲染（含无来源警告）
+                gotFinal = true;
+                // 引用校验：异步模式下 done 先到，结果稍后由 grounding 事件更新
+                if (ev.grounding_pending) {
+                    setGBadge('🔎 引用校验中…', 'pending');
+                } else if (ev.grounding === false) {
+                    setGBadge('⚠️ 引用校验：' + (ev.grounding_note || '部分内容未在资料中找到依据'), 'warn');
+                } else {
+                    clearGBadge();   // 通过：不展示徽标
+                }
+                finishTurn();   // 答案已出，立刻恢复输入，不等校验
+                return;
+            }
+            if (ev.type === 'grounding') {
+                // 异步校验结果：strict 模式判定不合规时，以后到的保守答案为准
+                if (ev.answer) renderAnswer(ensureBubble(), ev.answer);
+                if (ev.grounding === false) {
+                    setGBadge('⚠️ 引用校验：' + (ev.grounding_note || '部分内容未在资料中找到依据'), 'warn');
+                } else {
+                    clearGBadge();   // 通过：不展示徽标
+                }
+                return;
+            }
+            if (ev.type === 'error') {
+                ensureBubble().textContent = '⚠️ ' + (ev.message || 'AI服务异常');
+                gotFinal = true;
+                return;
+            }
+        }
+
+        try {
+            const r = await fetch(streamUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ question: q, mode: mode, profile: profile })
+            });
+            const ct = r.headers.get('Content-Type') || '';
+            const isStream = ct.indexOf('text/event-stream') >= 0;
+            // 未登录 / 被拦截 / 报错时，服务端返回的是普通 JSON（即便状态码为 200，body 里的 code 也非 200）。
+            // 必须按 JSON 处理，否则会被当成「空流」整段吞掉，导致登录提示消失。
+            if (!r.ok || !isStream || !r.body) {
+                const data = await r.json().catch(function () { return {}; });
+                if (data.code === 200) {
+                    const d = data.data || {};
+                    if (d.greeting) turnGreeting = true;
+                    appendAnswerHtml(d.answer || '（无响应内容）');
+                    renderSources(d.sources);
+                } else if (data.need_login) {
+                    appendLoginPrompt();
+                } else {
+                    appendMsg('ai', '⚠️ ' + (data.msg || 'AI服务异常'));
+                }
+                return;
+            }
+            const reader = r.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let buf = '';
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buf += decoder.decode(value, { stream: true });
+                let idx;
+                while ((idx = buf.indexOf('\n\n')) >= 0) {
+                    const raw = buf.slice(0, idx);
+                    buf = buf.slice(idx + 2);
+                    const line = raw.split('\n').find(function (l) { return l.startsWith('data:'); });
+                    if (!line) continue;
+                    const json = line.slice(5).trim();
+                    if (!json) continue;
+                    let ev;
+                    try { ev = JSON.parse(json); } catch (e) { continue; }
+                    handleEvent(ev);
+                }
+            }
+            // Flush 残留（无结尾空行的情况）
+            if (buf.trim()) {
+                const line = buf.split('\n').find(function (l) { return l.startsWith('data:'); });
+                if (line) {
+                    try { handleEvent(JSON.parse(line.slice(5).trim())); } catch (e) {}
+                }
+            }
+            // 流式正常结束但既无 delta 也无 done/answer（极少）：兜底提示
+            if (!gotFinal) {
+                ensureBubble().textContent = '（未收到模型输出，请重试）';
+            }
+        } catch (e) {
+            // 网络层失败：回退到整段返回接口，保证「回答」一定出现
+            try {
+                const r2 = await fetch(normalUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    body: JSON.stringify({ question: q, mode: mode, profile: profile })
+                });
+                const data = await r2.json();
+                if (data.code === 200) {
+                    const d = data.data || {};
+                    if (d.greeting) turnGreeting = true;
+                    if (aiBubble) renderAnswer(aiBubble, d.answer || '（无响应内容）');
+                    else appendAnswerHtml(d.answer || '（无响应内容）');
+                    renderSources(d.sources);
+                } else if (data.need_login) {
+                    appendLoginPrompt();
+                } else {
+                    appendMsg('ai', '⚠️ ' + (data.msg || 'AI服务异常'));
+                }
+            } catch (e2) {
+                appendMsg('ai', '⚠️ 请求失败：' + (e2.message || e.message));
+            }
+        } finally {
+            finishTurn();
+            ta.focus();
+        }
+    }
+
+    sendBtn && sendBtn.addEventListener('click', send);
+    ta && ta.addEventListener('keydown', function(e){
+        if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); send(); }
+    });
+    clearBtn && clearBtn.addEventListener('click', async function(){
+        if (!confirm('确认清空当前对话历史？')) return;
+        try {
+            await fetch('{{ url_for("homepage.api_clear_history") }}', {
+                method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            chatBox.innerHTML = '';
+            location.reload();
+        } catch(e){ location.reload(); }
+    });
+    document.querySelectorAll('.tip').forEach(function(el){
+        el.addEventListener('click', function(){
+            ta.value = this.dataset.q || '';
+            ta.focus();
+        });
+    });
+    // 速度档位按钮：独立分组，互不干扰「思维」按钮的 active 态
+    document.querySelectorAll('.speed-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            document.querySelectorAll('.speed-btn').forEach(function(b){ b.classList.remove('active'); });
+            btn.classList.add('active');
+        });
+    });
+    document.querySelectorAll('.think-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+            document.querySelectorAll('.think-btn').forEach(function(b){ b.classList.remove('active'); });
+            btn.classList.add('active');
+            // 用户提问头像随当前模式刷新为对应图标（🌀/📚）；AI 头像固定 🤖，不随模式变化
+            const uav = userAvatar();
+            document.querySelectorAll('.msg.user .avatar').forEach(function(el){ el.textContent = uav; });
+        });
+    });
+})();
+</script>
+{% endblock %}

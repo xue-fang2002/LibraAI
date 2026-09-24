@@ -1,0 +1,243 @@
+/* ================================================================
+   办公自动化 AI 助手 — 沿用 office_tools 的 --ot-* 黏土质感变量
+   ================================================================ */
+
+/* 悬浮入口：主色跟随展厅灯光主题（与工具箱 AI 助手一致） */
+body[data-light-theme] .oa-fab,
+body[data-light-theme] .oa-modal {
+  --ot-primary: var(--theme-primary);
+  --ot-primary-light: var(--theme-secondary);
+}
+
+.oa-fab {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 1500;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: var(--ot-primary, #6d5dfc);
+  border-radius: 50px;
+  padding: 12px 20px;
+  box-shadow: var(--ot-shadow-btn, 6px 6px 12px #b8b9be, -6px -6px 12px #ffffff);
+  transition: var(--ot-transition, all 0.3s ease);
+}
+.oa-fab:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+.oa-fab:active {
+  transform: translateY(0);
+  box-shadow: var(--ot-shadow-btn-active);
+}
+
+.oa-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 26, 38, 0.35);
+}
+
+.oa-modal {
+  width: 580px;
+  max-width: 92vw;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  background: var(--ot-card-bg, #e6ebf2);
+  color: var(--ot-text, #4a5568);
+  border-radius: var(--ot-radius-lg, 24px);
+  box-shadow: var(--ot-shadow-outer);
+  overflow-y: auto;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+/* 暗色：仅弹窗/按钮跟随，不改动办公模块原有配色 */
+body.dark .oa-modal {
+  --ot-card-bg: #222b3a;
+  --ot-text: #a0aec0;
+  --ot-text-light: #7b8494;
+}
+body.dark .oa-fab {
+  --ot-primary: var(--theme-primary, #6d5dfc);
+}
+
+.oa-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.oa-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ot-text, #4a5568);
+}
+.oa-x {
+  border: none;
+  background: var(--ot-card-bg, #e6ebf2);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ot-text, #4a5568);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  box-shadow: var(--ot-shadow-btn);
+  transition: var(--ot-transition, all 0.3s ease);
+}
+.oa-x:active {
+  box-shadow: var(--ot-shadow-btn-active);
+}
+
+.oa-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ot-text-light, #7b8494);
+}
+
+.oa-text {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  border: none;
+  border-radius: var(--ot-radius-md, 16px);
+  padding: 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ot-text, #4a5568);
+  background: var(--ot-card-bg, #e6ebf2);
+  box-shadow: var(--ot-shadow-inner);
+  outline: none;
+}
+.oa-text:focus {
+  box-shadow: var(--ot-shadow-inner), 0 0 0 2px var(--ot-primary-light, #8b80ff);
+}
+
+.oa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.oa-btn {
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ot-text, #4a5568);
+  background: var(--ot-card-bg, #e6ebf2);
+  border-radius: 50px;
+  padding: 9px 18px;
+  box-shadow: var(--ot-shadow-btn);
+  transition: var(--ot-transition, all 0.3s ease);
+}
+.oa-btn:hover {
+  color: var(--ot-primary, #6d5dfc);
+  transform: translateY(-1px);
+}
+.oa-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--ot-shadow-btn-active);
+}
+.oa-btn.primary {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: var(--ot-primary, #6d5dfc);
+}
+
+.oa-status {
+  font-size: 12px;
+  min-height: 16px;
+  color: var(--ot-text, #4a5568);
+}
+.oa-status-ok { color: #2f9e6f; }
+.oa-status-err { color: #e0533d; }
+
+/* 计划预览卡片 */
+.oa-plan {
+  border-radius: var(--ot-radius-md, 16px);
+  background: var(--ot-card-bg, #e6ebf2);
+  box-shadow: var(--ot-shadow-inner);
+  padding: 12px 14px;
+}
+.oa-plan-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ot-primary, #6d5dfc);
+  margin-bottom: 8px;
+}
+.oa-reply {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ot-text-light, #7b8494);
+  margin-bottom: 8px;
+}
+.oa-tool {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ot-text, #4a5568);
+  margin-bottom: 8px;
+}
+.oa-group {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ot-primary, #6d5dfc);
+  opacity: 0.85;
+}
+.oa-params {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.oa-param {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ot-text-light, #7b8494);
+}
+.oa-param b {
+  color: var(--ot-text, #4a5568);
+}
+.oa-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.oa-file {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2f9e6f;
+  background: var(--ot-card-bg, #e6ebf2);
+  border-radius: 50px;
+  padding: 3px 10px;
+  box-shadow: 3px 3px 6px #b8b9be, -3px -3px 6px #ffffff;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.oa-file-miss {
+  color: #e0533d;
+}
+.oa-none {
+  font-size: 11px;
+  color: var(--ot-text-muted, #9aa2b1);
+}
+.oa-tip {
+  font-size: 11px;
+  color: var(--ot-text-muted, #9aa2b1);
+  line-height: 1.5;
+}

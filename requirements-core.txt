@@ -1,0 +1,47 @@
+# ============================================================
+# 核心依赖清单（requirements-core.txt）
+# ------------------------------------------------------------
+# 用途：Docker 镜像 / CI 默认只装这一份 —— 体积小、构建快、不依赖编译器。
+#       AI 相关能力（torch / faiss / transformers / llama-cpp-python 等）
+#       不在这里，需要时改用完整版：
+#           pip install -r requirements.txt
+#       或在构建镜像时加 build-arg：--build-arg INSTALL_AI=true
+#
+# ⚠️ 维护约定：本文件内容必须与 requirements.txt 的「核心（必装）」段保持一致。
+#    新增核心依赖时两边都要加。
+# ============================================================
+
+Flask>=3.0.0
+Werkzeug>=3.0.0
+PyYAML>=6.0
+requests>=2.31
+numpy>=1.24
+Flask-Cors>=4.0.0
+
+# 文档 / 表格
+openpyxl>=3.1
+python-docx>=1.1
+python-pptx>=0.6
+xlrd>=2.0
+
+# PDF
+PyMuPDF>=1.23
+pypdf>=4.0
+PyPDF2>=3.0
+
+# 图片
+Pillow>=10.0
+opencv-python>=4.8
+
+# 图表
+matplotlib>=3.7
+pandas>=2.0
+
+# OCR（除本包外还需 Tesseract 引擎本体：镜像里已装；本机见 requirements.txt 注释）
+pytesseract>=0.3.10
+
+# 工具箱轻量扩展 / AI 员工工具（纯 Python，体积小）
+zhconv>=1.4
+pypinyin>=0.50
+lunar_python>=1.4
+pdfplumber>=0.10

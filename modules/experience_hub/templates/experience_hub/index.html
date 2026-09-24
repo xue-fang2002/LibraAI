@@ -1,0 +1,130 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}经验社区{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='experience_hub/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_markdown.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_qa_ui.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="hub-container">
+    <!-- 左侧：主要经验流 -->
+    <div class="main-feed">
+        <div class="feed-header">
+            <div class="category-tabs clay-tabs">
+                <button class="tab-btn active" data-cat="">✨ 全部</button>
+                <button class="tab-btn" data-cat="技术">💻 技术</button>
+                <button class="tab-btn" data-cat="设计">🎨 设计</button>
+                <button class="tab-btn" data-cat="产品">📈 产品</button>
+                <button class="tab-btn" data-cat="职场">🤝 职场</button>
+            </div>
+            <div class="feed-actions">
+                <input type="text" id="tagSearch" placeholder="🔍 搜索标签..." class="clay-input">
+            </div>
+        </div>
+
+        <div id="postsContainer" class="posts-grid">
+            <!-- 卡片由 JavaScript 动态渲染 -->
+        </div>
+        <div id="loadMoreWrap" style="text-align:center; margin: 30px 0;">
+            <button id="loadMoreBtn" class="clay-btn-secondary">加载更多</button>
+        </div>
+    </div>
+
+    <!-- 右侧边栏（2.5D 数据流 + 热榜） -->
+    <aside class="sidebar-panel">
+        <!-- AI：问问社区（复用全局保守问答） -->
+        <div class="paper-card sidebar-card ai-ask-card">
+            <h3>💬 问问社区</h3>
+            <div class="ai-ask-input-row">
+                <input type="text" id="aiAskInput" class="clay-input" placeholder="向社区经验提问…" />
+                <button id="aiAskBtn" class="clay-btn-icon ai-think-btn" title="发送">
+                    <span class="ai-btn-glyph ai-btn-glyph-send">➤</span>
+                    <span class="ai-btn-glyph ai-btn-glyph-think" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div id="aiAskAnswer" class="ai-ask-answer"></div>
+        </div>
+
+        <!-- 发布悬浮按钮（纸雕风格） -->
+        <div class="publish-float-clay">
+            <a href="{{ url_for('experience_hub.new_post') }}" class="clay-btn-primary btn-block">
+                ✨ 写下你的经验
+            </a>
+        </div>
+
+        <!-- 热榜 -->
+        <div class="paper-card sidebar-card">
+            <h3>🔥 热门榜</h3>
+            <ul id="hotList">
+                <li>加载中...</li>
+            </ul>
+        </div>
+
+        <!-- 标签云（粘土质感） -->
+        <div class="paper-card sidebar-card">
+            <h3>🏷️ 标签云</h3>
+            <div id="tagCloud" class="clay-tag-cloud">
+                <span>加载中...</span>
+            </div>
+        </div>
+
+        <!-- 2.5D 社区统计（纯展示） -->
+        <div class="paper-card sidebar-card">
+            <h3>📊 社区贡献流</h3>
+            <div class="stats-clay-row">
+                <div class="stat-item">
+                    <span class="stat-number" id="statTotal">0</span>
+                    <span class="stat-label">经验总数</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="statLikes">❤️ 0</span>
+                    <span class="stat-label">总点赞</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 索引维护（仅管理员可见） -->
+        {% if is_admin %}
+        <div class="paper-card sidebar-card admin-index-card">
+            <h3>🛠️ 索引维护</h3>
+            <p class="admin-index-hint">
+                经验帖与图书共用一套向量索引。配置中心执行「全量重建」后会自动补回，
+                此按钮用于单独重刷经验帖（更换模型、索引异常时），不会影响图书索引。
+            </p>
+            <button id="reindexBtn" class="clay-btn-secondary btn-block">🔄 重建经验索引</button>
+            <div id="reindexMsg" class="admin-index-msg"></div>
+        </div>
+        {% endif %}
+    </aside>
+</div>
+
+<!-- 未登录提示 Toast（粘土风格） -->
+<div id="guestToast" class="clay-toast" style="display:none;">
+    <span>💡 登录后即可点亮这颗星～</span>
+    <a href="{{ url_for('login_view') }}" class="toast-link">去登录</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 初始化全局变量（必须在 script.js 之前，否则 script.js 顶层 IIFE
+    // 读取 window.EXPERIENCE_HUB 时拿到 undefined，CONFIG 锁死为空对象）
+    window.EXPERIENCE_HUB = {
+        listApi: "{{ url_for('experience_hub.api_list') }}",
+        hotTagsApi: "{{ url_for('experience_hub.api_hot_tags') }}",
+        likeApi: "{{ url_for('experience_hub.api_like', post_id=0) }}".replace('/0', ''),
+        collectApi: "{{ url_for('experience_hub.api_collect', post_id=0) }}".replace('/0', ''),
+        reindexApi: "{{ url_for('experience_hub.api_reindex') }}",
+        currentUser: {{ current_user|tojson|safe if current_user else 'null' }},
+        loginUrl: "{{ url_for('login_view') }}"
+    };
+</script>
+<script src="{{ url_for('static', filename='vendor/ai-md/marked.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/ai-md/highlight.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/ai-md/purify.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ai_markdown.js') }}"></script>
+<script src="{{ url_for('static', filename='experience_hub/script.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,2631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录 - {{ app_name }}</title>
+    <meta name="description" content="登录星辰管理系统，访问企业级应用平台。" />
+
+    <style>
+        /* ============================================================
+               1. CSS 自定义属性（全局变量）
+               ============================================================ */
+        :root {
+            --color-primary: #3f6bc2;
+            --color-primary-hover: #507fd9;
+            --color-primary-gradient: linear-gradient(135deg, #4a7ad8 0%, #3a5fb0 100%);
+            --color-text-light: #ffffff;
+            --color-text-muted: #a1b5d8;
+            --color-text-dim: #8aa4c8;
+            --color-border: rgba(160, 190, 230, 0.25);
+            --color-shadow: rgba(0, 0, 0, 0.55);
+            --radius-card: 16px;
+            --radius-input: 6px;
+            --transition-smooth: 0.3s cubic-bezier(0.2, 0.9, 0.4, 1);
+            --font-family: "Microsoft Yahei", "PingFang SC", system-ui, sans-serif;
+
+            --anim-cloud-slow: 140s;
+            --anim-cloud-medium: 105s;
+            --anim-cloud-fast: 90s;
+            --anim-fish: 28s;
+            --anim-whale: 14s;
+            --anim-dolphin: 6s;
+
+            --size-moon: 86px;
+            --size-star-sm: 8px;
+            --size-star-md: 14px;
+            --size-star-lg: 14px;
+
+            /* 发光按钮变量 - 蓝色主题 */
+            --glow-color: rgb(80, 200, 255);
+            --glow-spread-color: rgba(60, 180, 255, 0.6);
+            --glow-color-bright: rgb(130, 225, 255);
+            --btn-color-dark: #0a1a2e;
+            --btn-color-dark-hover: #0d2645;
+        }
+
+        /* ============================================================
+               2. 全局重置 & 基础
+               ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-family);
+        }
+
+        html {
+            height: 100%;
+        }
+
+        body {
+            width: 125vw;
+            height: 125vh;
+            min-height: 125vh;
+            zoom: 0.8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+            background:
+                radial-gradient(circle at 18% 12%, rgba(255, 251, 220, 0.12) 0%, transparent 28%),
+                linear-gradient(180deg, #080e1c 0%, #101d35 48%, #172d55 100%);
+            opacity: 0;
+            animation: pageFadeIn 0.4s ease 0.1s forwards;
+        }
+
+        @keyframes pageFadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                animation-delay: 0.01ms !important;
+            }
+
+            .moon,
+            .star-sm,
+            .star-md,
+            .star-lg,
+            .star-dot,
+            .bird,
+            .shooting-star,
+            .cloud,
+            .dolphin-wrap,
+            .whale-wrap,
+            .fish,
+            .beam-glow,
+            .beam-main,
+            .l-light,
+            .sea-shimmer,
+            .sea-reflection {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+            }
+
+            .login-box:hover {
+                transform: none !important;
+            }
+            #loginBtn:hover:not(:disabled) {
+                transform: none !important;
+            }
+            .guest-btn:hover {
+                transform: none !important;
+            }
+        }
+
+        /* ============================================================
+               4. 月亮
+               ============================================================ */
+        .moon {
+            position: absolute;
+            top: 10%;
+            left: 12%;
+            width: var(--size-moon);
+            height: var(--size-moon);
+            border-radius: 50%;
+            box-shadow: inset -24px -10px 0 #fffbe8;
+            filter: drop-shadow(0 0 18px rgba(255, 252, 220, 0.45));
+            z-index: 1;
+            animation: moonFloat 10s ease-in-out infinite alternate;
+            will-change: transform, translate;
+            transform: translateZ(0);
+            aria-hidden: true;
+        }
+
+        @keyframes moonFloat {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(12px, -8px);
+            }
+        }
+
+        /* ============================================================
+               5. 星星（减少数量，部分不闪烁）
+               ============================================================ */
+        .star-sm,
+        .star-md,
+        .star-lg {
+            position: absolute;
+            background: #fffbe8;
+            z-index: 1;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            will-change: transform, translate, opacity;
+            transform: translateZ(0);
+            pointer-events: none;
+            aria-hidden: true;
+        }
+
+        .star-sm {
+            width: var(--size-star-sm);
+            height: var(--size-star-sm);
+        }
+
+        .star-md {
+            width: var(--size-star-md);
+            height: var(--size-star-md);
+            box-shadow: 0 0 8px rgba(255, 252, 220, 0.7);
+        }
+
+        .star-lg {
+            width: var(--size-star-lg);
+            height: var(--size-star-lg);
+            box-shadow: 0 0 10px rgba(255, 252, 220, 0.8);
+        }
+
+        .star-twinkle {
+            animation: starTwinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes starTwinkle {
+            0%,
+            100% {
+                opacity: 0.2;
+                transform: scale(0.9);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.15);
+            }
+        }
+
+        .star-static {
+            opacity: 0.6;
+        }
+
+        /* ---- 新增：小圆点星星 ---- */
+        .star-dot {
+            position: absolute;
+            background: #fffbe8;
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+            aria-hidden: true;
+            will-change: transform, opacity;
+            transform: translateZ(0);
+            box-shadow: 0 0 2px rgba(255, 252, 220, 0.3);
+        }
+
+        @keyframes starDotTwinkle {
+            0%,
+            100% {
+                opacity: 0.15;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.75;
+                transform: scale(1.4);
+            }
+        }
+
+        /* ============================================================
+               6. 飞鸟
+               ============================================================ */
+        .bird {
+            position: absolute;
+            z-index: 2;
+            opacity: 0.6;
+            pointer-events: none;
+            aria-hidden: true;
+        }
+
+        .bird-wing {
+            position: absolute;
+            width: 14px;
+            height: 6px;
+            background: #0a1528;
+            border-radius: 50% 50% 0 0;
+            transform-origin: 50% 100%;
+        }
+        .bird-wing.left {
+            left: -6px;
+            animation: wingFlap 0.8s ease-in-out infinite alternate;
+        }
+        .bird-wing.right {
+            right: -6px;
+            animation: wingFlap 0.8s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes wingFlap {
+            0% {
+                transform: rotate(-25deg) scaleY(1);
+            }
+            100% {
+                transform: rotate(15deg) scaleY(0.6);
+            }
+        }
+
+        .bird-1 {
+            top: 18%;
+            left: 8%;
+            animation: birdFly1 18s linear infinite;
+        }
+        .bird-2 {
+            top: 22%;
+            left: 5%;
+            transform: scale(0.7);
+            animation: birdFly2 22s linear infinite;
+            animation-delay: 3s;
+        }
+        .bird-3 {
+            top: 15%;
+            left: 12%;
+            transform: scale(0.5);
+            animation: birdFly3 25s linear infinite;
+            animation-delay: 8s;
+        }
+
+        @keyframes birdFly1 {
+            0% {
+                transform: translate(0, 0);
+            }
+            25% {
+                transform: translate(30px, -8px);
+            }
+            50% {
+                transform: translate(60px, 4px);
+            }
+            75% {
+                transform: translate(90px, -6px);
+            }
+            100% {
+                transform: translate(120px, 0);
+            }
+        }
+        @keyframes birdFly2 {
+            0% {
+                transform: translate(0, 0) scale(0.7);
+            }
+            30% {
+                transform: translate(25px, 6px) scale(0.7);
+            }
+            60% {
+                transform: translate(50px, -4px) scale(0.7);
+            }
+            100% {
+                transform: translate(80px, 2px) scale(0.7);
+            }
+        }
+        @keyframes birdFly3 {
+            0% {
+                transform: translate(0, 0) scale(0.5);
+            }
+            40% {
+                transform: translate(20px, -10px) scale(0.5);
+            }
+            80% {
+                transform: translate(45px, 5px) scale(0.5);
+            }
+            100% {
+                transform: translate(60px, 0) scale(0.5);
+            }
+        }
+
+        /* ============================================================
+               7. 流星
+               ============================================================ */
+        .shooting-star {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #fffbe8;
+            border-radius: 50%;
+            box-shadow: 0 0 8px 3px rgba(255, 252, 220, 0.9);
+            z-index: 1;
+            opacity: 0;
+            will-change: transform, opacity;
+            pointer-events: none;
+            aria-hidden: true;
+        }
+
+        .shooting-star::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 50%;
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(to left, rgba(255, 252, 220, 0.85), rgba(255, 252, 220, 0));
+            transform-origin: right center;
+            transform: rotate(35deg);
+            border-radius: 2px;
+            filter: blur(0.6px);
+        }
+
+        .shooting-star-1 {
+            top: 8%;
+            left: 15%;
+            animation: shoot1 8s ease-out infinite;
+            animation-delay: 2s;
+        }
+        .shooting-star-2 {
+            top: 5%;
+            left: 35%;
+            animation: shoot2 12s ease-out infinite;
+            animation-delay: 7s;
+        }
+        .shooting-star-3 {
+            top: 12%;
+            left: 5%;
+            animation: shoot3 10s ease-out infinite;
+            animation-delay: 14s;
+        }
+
+        @keyframes shoot1 {
+            0% {
+                opacity: 0;
+                transform: translate(0, 0);
+            }
+            5% {
+                opacity: 1;
+            }
+            20% {
+                opacity: 0;
+                transform: translate(200px, 140px);
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+        @keyframes shoot2 {
+            0% {
+                opacity: 0;
+                transform: translate(0, 0);
+            }
+            4% {
+                opacity: 1;
+            }
+            18% {
+                opacity: 0;
+                transform: translate(200px, 140px);
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+        @keyframes shoot3 {
+            0% {
+                opacity: 0;
+                transform: translate(0, 0);
+            }
+            5% {
+                opacity: 1;
+            }
+            22% {
+                opacity: 0;
+                transform: translate(200px, 140px);
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* ============================================================
+               8. 云朵
+               ============================================================ */
+        .cloud {
+            position: absolute;
+            z-index: 2;
+            opacity: 0.68;
+            animation: cloudDrift linear infinite;
+            will-change: transform;
+            filter: blur(2px);
+            pointer-events: none;
+            aria-hidden: true;
+            width: 200px;
+            height: 60px;
+            border-radius: 100px;
+        }
+
+        .cloud-part {
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4), transparent 35%), #ffffff;
+            border-radius: 50%;
+            box-shadow:
+                inset 0 -10px 18px rgba(200, 220, 255, 0.3),
+                inset 0 10px 18px rgba(255, 255, 255, 0.9),
+                0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .cloud-part.layer {
+            filter: blur(8px);
+            opacity: 0.6;
+        }
+
+        .cloud--near {
+            opacity: 0.62;
+            background: radial-gradient(circle at 35% 28%, rgba(225, 238, 255, 0.6), transparent 40%), #eef4ff;
+            box-shadow: inset 0 -10px 18px rgba(150, 180, 230, 0.3), inset 0 10px 18px rgba(255, 255, 255, 0.95), 0 8px 16px rgba(0, 0, 0, 0.12);
+        }
+        .cloud--near .cloud-part {
+            background: radial-gradient(circle at 35% 28%, rgba(225, 238, 255, 0.6), transparent 40%), #eef4ff;
+            box-shadow: inset 0 -10px 18px rgba(150, 180, 230, 0.3), inset 0 10px 18px rgba(255, 255, 255, 0.95), 0 8px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .cloud--far {
+            opacity: 0.82;
+            background: radial-gradient(circle at 30% 30%, rgba(120, 150, 200, 0.35), transparent 38%), #9fb6d6;
+            box-shadow: inset 0 -12px 20px rgba(30, 50, 90, 0.5), inset 0 8px 16px rgba(150, 175, 215, 0.45), 0 10px 18px rgba(0, 0, 0, 0.3);
+        }
+        .cloud--far .cloud-part {
+            background: radial-gradient(circle at 30% 30%, rgba(120, 150, 200, 0.35), transparent 38%), #9fb6d6;
+            box-shadow: inset 0 -12px 20px rgba(30, 50, 90, 0.5), inset 0 8px 16px rgba(150, 175, 215, 0.45), 0 10px 18px rgba(0, 0, 0, 0.3);
+        }
+
+        .cloud--mid {
+            opacity: 0.74;
+            background: radial-gradient(circle at 32% 30%, rgba(180, 205, 240, 0.45), transparent 40%), #cdddf2;
+            box-shadow: inset 0 -11px 19px rgba(70, 95, 140, 0.4), inset 0 9px 17px rgba(220, 235, 255, 0.7), 0 9px 17px rgba(0, 0, 0, 0.22);
+        }
+        .cloud--mid .cloud-part {
+            background: radial-gradient(circle at 32% 30%, rgba(180, 205, 240, 0.45), transparent 40%), #cdddf2;
+            box-shadow: inset 0 -11px 19px rgba(70, 95, 140, 0.4), inset 0 9px 17px rgba(220, 235, 255, 0.7), 0 9px 17px rgba(0, 0, 0, 0.22);
+        }
+
+        @keyframes cloudDrift {
+            0% {
+                transform: translateX(0) translateY(0);
+            }
+            18% {
+                transform: translateX(90px) translateY(-18px);
+            }
+            42% {
+                transform: translateX(210px) translateY(-8px);
+            }
+            68% {
+                transform: translateX(330px) translateY(-22px);
+            }
+            100% {
+                transform: translateX(calc(100vw + 650px)) translateY(0);
+            }
+        }
+
+        /* ============================================================
+               9. 山峦
+               ============================================================ */
+        .mountains {
+            position: absolute;
+            bottom: 26%;
+            left: 0;
+            width: 100%;
+            height: 140px;
+            z-index: 3;
+            pointer-events: none;
+            aria-hidden: true;
+            overflow: hidden;
+        }
+
+        .mountain {
+            position: absolute;
+            bottom: 0;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(18, 35, 60, 0.85) 0%, rgba(8, 18, 35, 0.95) 100%);
+            clip-path: polygon(0% 100%, 15% 30%, 30% 55%, 50% 15%, 70% 45%, 85% 25%, 100% 100%);
+            box-shadow: inset 0 -20px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .mountain--back {
+            height: 80%;
+            background: linear-gradient(180deg, rgba(12, 25, 48, 0.7) 0%, rgba(5, 12, 28, 0.9) 100%);
+            opacity: 0.7;
+            filter: blur(1px);
+        }
+
+        .mountain--front {
+            height: 100%;
+            background: linear-gradient(180deg, rgba(22, 40, 68, 0.9) 0%, rgba(8, 18, 35, 0.98) 100%);
+        }
+
+        .mountain-1 {
+            left: -2%;
+            width: 35%;
+            clip-path: polygon(0% 100%, 20% 20%, 45% 50%, 70% 10%, 100% 100%);
+        }
+
+        .mountain-2 {
+            left: 22%;
+            width: 40%;
+            clip-path: polygon(0% 100%, 25% 35%, 55% 15%, 80% 40%, 100% 100%);
+        }
+
+        .mountain-3 {
+            left: 50%;
+            width: 32%;
+            clip-path: polygon(0% 100%, 18% 25%, 40% 45%, 65% 18%, 100% 100%);
+        }
+
+        .mountain-4 {
+            left: 72%;
+            width: 30%;
+            clip-path: polygon(0% 100%, 22% 30%, 50% 12%, 78% 38%, 100% 100%);
+        }
+
+        .mountain-5 {
+            left: -5%;
+            width: 28%;
+            clip-path: polygon(0% 100%, 30% 28%, 60% 8%, 100% 100%);
+            opacity: 0.5;
+            filter: blur(2px);
+        }
+
+        .mountain-6 {
+            left: 45%;
+            width: 38%;
+            clip-path: polygon(0% 100%, 20% 18%, 50% 40%, 75% 12%, 100% 100%);
+            opacity: 0.4;
+            filter: blur(2px);
+        }
+
+        .mountain-snow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 20%;
+            background: radial-gradient(ellipse at 30% 0%, rgba(220, 235, 255, 0.15) 0%, transparent 70%);
+            clip-path: inherit;
+            pointer-events: none;
+        }
+
+        /* ============================================================
+               10. 海天交界地平线光晕
+               ============================================================ */
+        .horizon {
+            position: absolute;
+            left: 0;
+            bottom: 28%;
+            width: 100%;
+            height: 130px;
+            transform: translateY(50%);
+            background: radial-gradient(120% 55% at 50% 50%, rgba(130, 215, 235, 0.16), transparent 72%);
+            : 4;
+            pointer-events: none;
+            aria-hidden: true;
+        }
+
+        .horizon::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 50%;
+            width: 100%;
+            height: 1.5px;
+            background: linear-gradient(90deg, transparent 0%, rgba(170, 232, 245, 0.65) 28%, rgba(200, 245, 255, 0.85) 50%, rgba(170, 232, 245, 0.65) 72%, transparent 100%);
+            box-shadow: 0 0 16px 3px rgba(120, 210, 235, 0.45), 0 0 38px 8px rgba(90, 195, 230, 0.18);
+        }
+
+        /* ============================================================
+               11. 鱼群
+               ============================================================ */
+        .sea-life {
+            position: absolute;
+            inset: 0;
+            z-index: 11;
+            pointer-events: none;
+            aria-hidden: true;
+        }
+
+        .fish {
+            position: absolute;
+            left: 0;
+            width: 38px;
+            height: 19px;
+            will-change: transform, opacity;
+            transform: translateZ(0);
+            transition: none;
+        }
+
+        .fish svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            filter:
+                drop-shadow(0 0 4px rgba(95, 226, 255, 0.9))
+                drop-shadow(0 0 10px rgba(60, 180, 255, 0.55));
+            will-change: transform;
+        }
+
+        /* ============================================================
+               12. 海洋
+               ============================================================ */
+        .sea {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 28%;
+            background:
+                radial-gradient(circle at 50% 10%, rgba(255, 255, 255, 0.12) 0%, transparent 22%),
+                linear-gradient(180deg, rgba(24, 74, 102, 0) 0%, #184a66 15%, #0f3552 100%);
+            z-index: 5;
+            overflow: hidden;
+            aria-hidden: true;
+        }
+
+        .sea-shimmer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            background:
+                radial-gradient(ellipse at 30% 40%, rgba(255, 252, 220, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 60%, rgba(255, 252, 220, 0.03) 0%, transparent 40%);
+            animation: shimmerMove 8s ease-in-out infinite alternate;
+            will-change: transform;
+            pointer-events: none;
+        }
+
+        @keyframes shimmerMove {
+            0% {
+                transform: translateX(-20%) translateY(0);
+            }
+            100% {
+                transform: translateX(10%) translateY(-5%);
+            }
+        }
+
+        .sea-reflection {
+            position: absolute;
+            bottom: 8%;
+            right: 18%;
+            width: 160px;
+            height: 22px;
+            background: linear-gradient(90deg, rgba(255, 252, 220, 0.5), rgba(255, 252, 220, 0.15), transparent);
+            filter: blur(5px);
+            animation: reflectionShimmer 4s ease-in-out infinite;
+            z-index: 6;
+        }
+
+        @keyframes reflectionShimmer {
+            0%,
+            100% {
+                opacity: 0.4;
+                transform: scaleX(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scaleX(1.15);
+            }
+        }
+
+        /* ============================================================
+               13. 海豚（放大，前置，确保可见）
+               ============================================================ */
+        .dolphin-wrap {
+            position: absolute;
+            bottom: 22%;
+            left: 20%;
+            z-index: 10;
+            animation: dolphinJump var(--anim-dolphin) ease-in-out infinite;
+            pointer-events: none;
+            aria-hidden: true;
+            filter: drop-shadow(0 2px 10px rgba(60, 180, 255, 0.15));
+            transform: scale(1.8);
+        }
+
+        .dolphin {
+            width: 62px;
+            height: 32px;
+            background: linear-gradient(180deg, #1a3a5a 0%, #0c2438 60%, #0a1a2e 100%);
+            clip-path: polygon(10% 55%, 22% 35%, 36% 22%, 52% 18%, 66% 24%, 74% 14%, 78% 22%, 86% 28%, 96% 42%, 100% 58%, 88% 64%, 76% 68%, 62% 66%, 48% 70%, 36% 66%, 24% 62%, 14% 58%, 6% 52%, 0% 48%);
+            position: relative;
+            transform-origin: center bottom;
+        }
+
+        .dolphin-eye {
+            position: absolute;
+            top: 10px;
+            left: 24px;
+            width: 6px;
+            height: 6px;
+            background: #fffbe8;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(255, 252, 220, 0.6);
+            z-index: 2;
+        }
+        .dolphin-eye::after {
+            content: '';
+            position: absolute;
+            top: 1.5px;
+            left: 1.5px;
+            width: 3px;
+            height: 3px;
+            background: #0a0a1a;
+            border-radius: 50%;
+        }
+
+        .dolphin-mouth {
+            position: absolute;
+            top: 18px;
+            left: 4px;
+            width: 16px;
+            height: 4px;
+            background: rgba(200, 230, 255, 0.12);
+            border-radius: 50%;
+            transform: rotate(-6deg);
+        }
+
+        .dolphin-ripple {
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 10px;
+            border: 2px solid rgba(100, 180, 220, 0.35);
+            border-radius: 50%;
+            animation: rippleExpand 5s ease-out infinite;
+        }
+
+        .dolphin-ripple-2 {
+            animation-delay: 0.6s;
+            width: 50px;
+            height: 8px;
+            bottom: -5px;
+        }
+
+        @keyframes dolphinJump {
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg) scale(1);
+            }
+            35% {
+                transform: translateY(-22px) rotate(-5deg) scale(1.02);
+            }
+            55% {
+                transform: translateY(-16px) rotate(3deg) scale(0.98);
+            }
+            75% {
+                transform: translateY(-6px) rotate(-1deg) scale(1);
+            }
+        }
+
+        @keyframes rippleExpand {
+            0%,
+            30% {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.5);
+            }
+            45% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) scale(1.6);
+            }
+        }
+
+        /* ============================================================
+               14. 鲸鱼（放大，前置，确保可见）
+               ============================================================ */
+        .whale-wrap {
+            position: absolute;
+            bottom: 12%;
+            left: 15%;
+            z-index: 10;
+            animation: whaleSwim var(--anim-whale) ease-in-out infinite alternate;
+            pointer-events: none;
+            aria-hidden: true;
+            filter: drop-shadow(0 2px 16px rgba(0, 20, 50, 0.35));
+            transform: scale(1.9);
+        }
+
+        .whale {
+            width: 110px;
+            height: 48px;
+            background:
+                radial-gradient(ellipse at 30% 35%, rgba(70, 100, 150, 0.35) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 65%, rgba(15, 25, 45, 0.5) 0%, transparent 40%),
+                linear-gradient(180deg, #1f3050 0%, #1a2a4a 40%, #0f1a2e 100%);
+            clip-path: polygon(0% 50%, 8% 32%, 22% 18%, 40% 10%, 58% 12%, 74% 22%, 86% 34%, 94% 46%, 100% 52%, 94% 58%, 86% 70%, 74% 82%, 58% 92%, 40% 94%, 22% 86%, 8% 72%, 0% 54%);
+            position: relative;
+            filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.5));
+            will-change: transform;
+        }
+
+        .whale-dorsal {
+            position: absolute;
+            top: -16px;
+            left: 42%;
+            width: 20px;
+            height: 26px;
+            background: linear-gradient(180deg, #1f3050, #15203a);
+            clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+            border-radius: 50% 50% 0 0;
+            z-index: 2;
+        }
+
+        .whale-tail {
+            position: absolute;
+            right: -24px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 38px;
+            height: 48px;
+            background: #1a2a4a;
+            clip-path: polygon(0% 30%, 40% 0%, 70% 10%, 100% 0%, 90% 30%, 70% 50%, 90% 70%, 100% 100%, 70% 90%, 40% 100%, 0% 70%);
+            animation: tailWag 3s ease-in-out infinite;
+            transform-origin: 0% 50%;
+        }
+
+        @keyframes tailWag {
+            0%,
+            100% {
+                transform: translateY(-50%) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-50%) rotate(6deg);
+            }
+        }
+
+        .whale-fin {
+            position: absolute;
+            top: 24px;
+            left: 20px;
+            width: 24px;
+            height: 16px;
+            background: #1a2a4a;
+            clip-path: polygon(0% 0%, 100% 0%, 80% 100%, 0% 100%);
+            transform: rotate(-22deg);
+            border-radius: 0 0 0 4px;
+        }
+
+        .whale-eye {
+            position: absolute;
+            top: 18px;
+            left: 32px;
+            width: 8px;
+            height: 8px;
+            background: #fffbe8;
+            border-radius: 50%;
+            box-shadow: 0 0 12px rgba(255, 252, 220, 0.8);
+            z-index: 2;
+            animation: eyeBlink 4.5s ease-in-out infinite;
+            transform-origin: center;
+        }
+
+        .whale-eye::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 3.5px;
+            height: 3.5px;
+            background: #0a0a1a;
+            border-radius: 50%;
+        }
+
+        @keyframes eyeBlink {
+            0%,
+            96%,
+            100% {
+                transform: scaleY(1);
+            }
+            98% {
+                transform: scaleY(0.12);
+            }
+        }
+
+        .whale-belly {
+            position: absolute;
+            top: 26px;
+            left: 20px;
+            width: 54px;
+            height: 18px;
+            background: repeating-linear-gradient(90deg,
+                    rgba(180, 210, 240, 0.08) 0px,
+                    rgba(180, 210, 240, 0.18) 8px,
+                    rgba(180, 210, 240, 0.08) 16px);
+            border-radius: 50%;
+            filter: blur(2px);
+            z-index: 1;
+        }
+
+        .whale-dots {
+            position: absolute;
+            top: 6px;
+            left: 46px;
+            width: 32px;
+            height: 10px;
+            z-index: 1;
+        }
+        .whale-dots span {
+            display: inline-block;
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.10);
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+
+        .spout {
+            position: absolute;
+            top: -36px;
+            left: 30px;
+            z-index: 5;
+        }
+        .drop {
+            position: absolute;
+            width: 7px;
+            background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.95), rgba(160, 210, 255, 0.20));
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            opacity: 0;
+            animation: spoutDrop 2.2s ease-in-out infinite;
+            filter: blur(0.3px);
+        }
+        .drop-1 {
+            left: -8px;
+            animation-delay: 0s;
+            height: 24px;
+            width: 6px;
+        }
+        .drop-2 {
+            left: 6px;
+            animation-delay: 0.4s;
+            height: 30px;
+            width: 8px;
+        }
+        .drop-3 {
+            left: 18px;
+            animation-delay: 0.8s;
+            height: 22px;
+            width: 6px;
+        }
+        .drop-4 {
+            left: -16px;
+            animation-delay: 0.2s;
+            height: 18px;
+            width: 5px;
+        }
+        .drop-5 {
+            left: 24px;
+            animation-delay: 0.6s;
+            height: 18px;
+            width: 5px;
+        }
+        .drop-6 {
+            left: 0px;
+            animation-delay: 1.0s;
+            height: 16px;
+            width: 4px;
+        }
+        .drop-7 {
+            left: 12px;
+            animation-delay: 0.3s;
+            height: 14px;
+            width: 4px;
+        }
+        .drop-8 {
+            left: -4px;
+            animation-delay: 0.7s;
+            height: 20px;
+            width: 5px;
+        }
+        .drop-9 {
+            left: 30px;
+            animation-delay: 0.5s;
+            height: 16px;
+            width: 4px;
+        }
+
+        @keyframes spoutDrop {
+            0% {
+                transform: translateY(0) scale(0.2) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.95;
+                transform: translateY(-16px) scale(0.7) rotate(2deg);
+            }
+            40% {
+                opacity: 0.85;
+                transform: translateY(-44px) scale(1) rotate(-1deg);
+            }
+            75% {
+                opacity: 0.25;
+                transform: translateY(-66px) scale(0.5) rotate(3deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-84px) scale(0.12) rotate(0deg);
+            }
+        }
+
+        @keyframes whaleSwim {
+            0% {
+                transform: translateX(-25px) translateY(0) rotate(0deg);
+            }
+            25% {
+                transform: translateX(20px) translateY(-14px) rotate(-2deg);
+            }
+            50% {
+                transform: translateX(65px) translateY(-4px) rotate(2deg);
+            }
+            75% {
+                transform: translateX(100px) translateY(-10px) rotate(-1deg);
+            }
+            100% {
+                transform: translateX(135px) translateY(-6px) rotate(0deg);
+            }
+        }
+
+        .spout-mist {
+            position: absolute;
+            top: -30px;
+            left: 18px;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.20), transparent 70%);
+            border-radius: 50%;
+            animation: mistExpand 2.2s ease-out infinite;
+            filter: blur(2px);
+            z-index: 4;
+        }
+
+        @keyframes mistExpand {
+            0% {
+                transform: scale(0.2);
+                opacity: 0;
+            }
+            25% {
+                opacity: 0.5;
+            }
+            100% {
+                transform: scale(2.4);
+                opacity: 0;
+            }
+        }
+
+        .splash {
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 34px;
+            z-index: 3;
+        }
+
+        .splash-particle {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 3.5px;
+            height: 3.5px;
+            background: rgba(160, 210, 255, 0.7);
+            border-radius: 50%;
+            animation: splashUp 6.5s ease-out infinite;
+            opacity: 0;
+        }
+
+        @keyframes splashUp {
+            0%,
+            32% {
+                opacity: 0;
+                transform: translate(-50%, 0) scale(0);
+            }
+            38% {
+                opacity: 1;
+                transform: translate(-50%, -2px) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(calc(-50% + var(--tx)), var(--ty)) scale(0.3);
+            }
+        }
+
+        .whale-ripple {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 110px;
+            height: 14px;
+            border: 2px solid rgba(100, 200, 240, 0.20);
+            border-radius: 50%;
+            animation: whaleRipple 6.5s ease-out infinite;
+        }
+        .whale-ripple-2 {
+            animation-delay: 0.9s;
+            width: 88px;
+            height: 11px;
+            bottom: -6px;
+        }
+
+        @keyframes whaleRipple {
+            0%,
+            35% {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.4);
+            }
+            50% {
+                opacity: 0.7;
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(-50%) scale(1.8);
+            }
+        }
+
+        /* ============================================================
+               15. 灯塔
+               ============================================================ */
+        .lighthouse {
+            position: absolute;
+            bottom: 26%;
+            right: 18%;
+            width: 72px;
+            height: 160px;
+            z-index: 10;
+            pointer-events: none;
+            aria-hidden: true;
+        }
+
+        .l-base {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 72px;
+            height: 36px;
+            background: linear-gradient(180deg, #9aa5b3 0%, #7f8fa6 100%);
+            border-radius: 4px;
+            z-index: 10;
+        }
+        .l-body {
+            position: absolute;
+            bottom: 36px;
+            left: 13px;
+            width: 46px;
+            height: 118px;
+            background: linear-gradient(180deg, #f5c08a 0%, #e8a970 100%);
+            border-radius: 3px;
+            z-index: 10;
+        }
+        .l-body::before,
+        .l-body::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.08);
+            left: 0;
+        }
+        .l-body::before {
+            top: 26%;
+        }
+        .l-body::after {
+            top: 52%;
+        }
+        .l-door {
+            position: absolute;
+            bottom: 36px;
+            left: 27px;
+            width: 18px;
+            height: 34px;
+            background: linear-gradient(180deg, #254b72 0%, #1a3552 100%);
+            border-radius: 9px 9px 0 0;
+            z-index: 10;
+        }
+        .l-top {
+            position: absolute;
+            top: 22px;
+            left: 16px;
+            width: 40px;
+            height: 30px;
+            background: linear-gradient(180deg, #2b78a8 0%, #1f5f8a 100%);
+            border-radius: 4px 4px 0 0;
+            z-index: 10;
+        }
+        .l-light {
+            position: absolute;
+            top: 8px;
+            left: 29px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #fffbe8;
+            animation: lightBlink 2.6s ease-in-out infinite;
+            z-index: 12;
+            will-change: opacity, box-shadow;
+        }
+
+        @keyframes lightBlink {
+            0%,
+            100% {
+                opacity: 0.5;
+                box-shadow: 0 0 12px 5px rgba(255, 252, 220, 0.5), 0 0 30px 12px rgba(255, 252, 220, 0.2);
+            }
+            50% {
+                opacity: 1;
+                box-shadow: 0 0 30px 14px rgba(255, 252, 220, 1), 0 0 60px 25px rgba(255, 252, 220, 0.45);
+            }
+        }
+
+        .beam-glow,
+        .beam-main {
+            position: absolute;
+            left: 36px;
+            transform-origin: 0 50%;
+            animation: beamSwing 7s ease-in-out infinite alternate;
+            z-index: 9;
+            -webkit-mask-image: linear-gradient(to right,
+                    rgba(0, 0, 0, 1) 0%,
+                    rgba(0, 0, 0, 1) 60%,
+                    rgba(0, 0, 0, 0) 100%);
+            mask-image: linear-gradient(to right,
+                    rgba(0, 0, 0, 1) 0%,
+                    rgba(0, 0, 0, 1) 60%,
+                    rgba(0, 0, 0, 0) 100%);
+            will-change: transform;
+        }
+
+        .beam-glow {
+            top: -30px;
+            width: 700px;
+            height: 100px;
+            background: linear-gradient(270deg, rgba(255, 252, 220, 0.35), rgba(255, 252, 220, 0.1), transparent);
+            clip-path: polygon(0% 48%, 100% 6%, 100% 94%, 0% 52%);
+            filter: blur(14px);
+        }
+
+        .beam-main {
+            top: -15px;
+            width: 550px;
+            height: 70px;
+            background: linear-gradient(270deg, rgba(255, 252, 220, 0.95), rgba(255, 252, 220, 0.3), transparent);
+            clip-path: polygon(0% 48%, 100% 5%, 100% 95%, 0% 52%);
+            z-index: 10;
+        }
+
+        @keyframes beamSwing {
+            0% {
+                transform: rotate(170deg);
+            }
+            100% {
+                transform: rotate(220deg);
+            }
+        }
+
+        .l-islet {
+            position: absolute;
+            bottom: 23%;
+            right: 16%;
+            width: 130px;
+            height: 36px;
+            background: linear-gradient(180deg, #16263c 0%, #0b1525 100%);
+            border-radius: 48% 52% 44% 56% / 70% 70% 30% 30%;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
+            z-index: 4;
+            pointer-events: none;
+            aria-hidden: true;
+        }
+
+        .l-islet::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(120% 80% at 50% 0%, rgba(120, 170, 220, 0.12), transparent 60%);
+        }
+
+        /* ============================================================
+               16. 登录框
+               ============================================================ */
+        .login-box {
+            position: relative;
+            z-index: 999;
+            width: 360px;
+            background: rgba(18, 25, 42, 0.78);
+            padding: 32px 30px 26px;
+            border-radius: var(--radius-card);
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.55),
+                0 0 18px rgba(95, 165, 255, 0.25),
+                0 0 32px rgba(90, 160, 255, 0.10),
+                inset 0 0 20px rgba(120, 175, 255, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(14px) saturate(1.1);
+            border: 1px solid rgba(160, 195, 245, 0.25);
+            margin: auto;
+            transition: transform 0.3s ease, box-shadow 0.4s ease;
+        }
+
+        .login-box:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 12px 40px rgba(0, 0, 0, 0.6),
+                0 0 22px rgba(95, 165, 255, 0.30),
+                0 0 38px rgba(90, 160, 255, 0.12),
+                inset 0 0 20px rgba(120, 175, 255, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            background: linear-gradient(135deg, #ffffff 60%, #a8c8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 40px rgba(100, 160, 255, 0.15);
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: var(--color-text-muted);
+            margin-bottom: 22px;
+            letter-spacing: 1px;
+        }
+
+        .tip {
+            color: #ff6b6b;
+            text-align: center;
+            margin-bottom: 14px;
+            font-size: 14px;
+            min-height: 24px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: rgba(255, 80, 80, 0.06);
+            border-left: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tip.error {
+            animation: shake 0.4s ease;
+            border-left-color: #ff6b6b;
+            background: rgba(255, 80, 80, 0.08);
+        }
+
+        .tip.success {
+            color: #6bcf7f;
+            border-left-color: #6bcf7f;
+            background: rgba(80, 255, 120, 0.06);
+        }
+
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            20% {
+                transform: translateX(-8px);
+            }
+            40% {
+                transform: translateX(8px);
+            }
+            60% {
+                transform: translateX(-5px);
+            }
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        .floating-group {
+            position: relative;
+            margin-bottom: 22px;
+        }
+
+        .floating-group input {
+            width: 100%;
+            padding: 18px 14px 6px;
+            font-size: 15px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-input);
+            background: transparent;
+            color: #ffffff;
+            transition: all var(--transition-smooth);
+            outline: none;
+            height: 52px;
+            box-sizing: border-box;
+            box-shadow: none;
+        }
+
+        .floating-group input:focus {
+            border-color: #8fb6f5;
+            box-shadow: 0 0 10px rgba(120, 180, 255, 0.55), 0 0 28px rgba(120, 180, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+            transform: scale(1.01);
+            outline: none;
+        }
+
+        .floating-group input:focus-visible {
+            outline: none;
+        }
+
+        .floating-group input::placeholder {
+            color: transparent;
+        }
+
+        .floating-group label {
+            position: absolute;
+            top: 50%;
+            left: 14px;
+            transform: translateY(-50%);
+            font-size: 14px;
+            color: var(--color-text-dim);
+            pointer-events: none;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            transform-origin: left center;
+        }
+
+        .floating-group input:focus+label,
+        .floating-group input:not(:placeholder-shown)+label {
+            top: 6px;
+            font-size: 11px;
+            color: #8ab0e8;
+            transform: translateY(0);
+        }
+
+        .floating-group.has-toggle input {
+            padding-right: 46px;
+        }
+
+        .pwd-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 26px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--color-text-dim);
+            transition: color 0.2s;
+            z-index: 3;
+            border-radius: 4px;
+        }
+
+        .pwd-toggle:hover {
+            color: #8ab0e8;
+        }
+
+        .pwd-toggle:focus-visible {
+            outline: 2px solid #8fb6f5;
+            outline-offset: 2px;
+        }
+
+        .pwd-toggle svg {
+            width: 20px;
+            height: 20px;
+            display: block;
+        }
+
+        .pwd-toggle .eye-slash {
+            display: none;
+        }
+
+        .pwd-toggle.visible .eye {
+            display: none;
+        }
+        .pwd-toggle.visible .eye-slash {
+            display: block;
+        }
+
+        .login-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: -4px 0 18px;
+        }
+
+        .login-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--color-text-muted);
+            font-weight: 400;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .login-options label:hover {
+            color: #c2d4ef;
+        }
+
+        .login-options input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--color-primary);
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .login-options a {
+            color: #6a8fc8;
+            font-size: 13px;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .login-options a:hover {
+            color: #8ab0e8;
+        }
+
+        .login-options a:focus-visible {
+            outline: 2px solid #8fb6f5;
+            outline-offset: 2px;
+            border-radius: 2px;
+        }
+
+        .btn-wrapper {
+            position: relative;
+        }
+
+        /* ============================================================
+               🔥 发光登录按钮 (参照 glowbutton 风格，蓝色主题)
+               ============================================================ */
+        #loginBtn {
+            /* 发光变量 - 蓝色主题 */
+            --glow-color: rgb(80, 200, 255);
+            --glow-spread-color: rgba(60, 180, 255, 0.55);
+            --glow-color-bright: rgb(130, 225, 255);
+            --btn-color-dark: #0a1a2e;
+
+            width: 100%;
+            padding: 1em 2em;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border: 0.1em solid var(--glow-color);
+            border-radius: 1.2em;
+            background-color: var(--btn-color-dark);
+            color: var(--glow-color);
+            cursor: pointer;
+            outline: none;
+            position: relative;
+            transition: all 0.35s ease;
+            box-shadow:
+                0 0 0.8em 0.2em var(--glow-color),
+                0 0 3em 0.8em var(--glow-spread-color),
+                inset 0 0 0.6em 0.15em var(--glow-color);
+            text-shadow: 0 0 0.4em var(--glow-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 56px;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        /* 底部光晕 (参照 glowbutton::after) */
+        #loginBtn::after {
+            pointer-events: none;
+            content: "";
+            position: absolute;
+            top: 120%;
+            left: 0;
+            height: 100%;
+            width: 100%;
+            background-color: var(--glow-spread-color);
+            filter: blur(2.2em);
+            opacity: 0.7;
+            transform: perspective(1.5em) rotateX(35deg) scale(1, 0.6);
+            transition: all 0.4s ease;
+            z-index: -1;
+        }
+
+        /* 悬停时：强光 + 背景变亮 */
+        #loginBtn:hover:not(:disabled) {
+            background-color: var(--glow-color);
+            color: var(--btn-color-dark);
+            box-shadow:
+                0 0 1.2em 0.4em var(--glow-color-bright),
+                0 0 4.5em 2.2em var(--glow-spread-color),
+                inset 0 0 0.8em 0.3em var(--glow-color-bright);
+            text-shadow: 0 0 0.6em rgba(10, 26, 46, 0.5);
+            transform: translateY(-2px) scale(1.01);
+            border-color: var(--glow-color-bright);
+        }
+
+        #loginBtn:hover:not(:disabled)::after {
+            opacity: 1;
+            filter: blur(2.8em);
+            background-color: var(--glow-color-bright);
+        }
+
+        /* 点击时 */
+        #loginBtn:active:not(:disabled) {
+            transform: translateY(0px) scale(0.97);
+            transition-duration: 0.08s;
+            box-shadow:
+                0 0 0.6em 0.2em var(--glow-color),
+                0 0 2.5em 1.2em var(--glow-spread-color),
+                inset 0 0 0.5em 0.15em var(--glow-color);
+        }
+
+        /* 禁用状态（加载中） */
+        #loginBtn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow:
+                0 0 0.5em 0.1em var(--glow-color),
+                0 0 1.8em 0.5em var(--glow-spread-color),
+                inset 0 0 0.4em 0.1em var(--glow-color);
+        }
+
+        #loginBtn:disabled::after {
+            opacity: 0.3;
+        }
+
+        /* 聚焦时保留发光但不额外加 outline */
+        #loginBtn:focus-visible {
+            outline: 2px solid var(--glow-color-bright);
+            outline-offset: 3px;
+        }
+
+        /* 按钮内部文字 & 加载器 */
+        #loginBtn .btn-text {
+            display: inline-block;
+            transition: all 0.2s;
+            position: relative;
+            z-index: 2;
+        }
+
+        #loginBtn .btn-loader {
+            display: none;
+            width: 22px;
+            height: 22px;
+            border: 2.5px solid rgba(255, 255, 255, 0.25);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            position: relative;
+            z-index: 2;
+        }
+
+        #loginBtn.loading .btn-text {
+            display: none;
+        }
+        #loginBtn.loading .btn-loader {
+            display: inline-block;
+        }
+
+        /* 加载时悬停效果禁用 */
+        #loginBtn.loading:hover:not(:disabled) {
+            background-color: var(--btn-color-dark);
+            color: var(--glow-color);
+            box-shadow:
+                0 0 0.4em 0.1em var(--glow-color),
+                0 0 1.5em 0.4em var(--glow-spread-color),
+                inset 0 0 0.6em 0.15em var(--glow-color);
+            border-color: var(--glow-color);
+            transform: none;
+            text-shadow: 0 0 0.4em var(--glow-color);
+        }
+
+        #loginBtn.loading:hover:not(:disabled)::after {
+            opacity: 0.7;
+            filter: blur(1.2em);
+            background-color: var(--glow-spread-color);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ============================================================
+               访客按钮 — 低调发光
+               ============================================================ */
+        .guest-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--color-text-muted);
+            border: 1.5px solid rgba(80, 200, 255, 0.30);
+            border-radius: 1em;
+            font-size: 14px;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 14px;
+            transition: all 0.35s ease;
+            position: relative;
+            overflow: hidden;
+            font-weight: 500;
+            box-shadow:
+                0 0 0.4em 0.05em rgba(80, 200, 255, 0.15),
+                0 0 1.2em 0.3em rgba(60, 180, 255, 0.08);
+            outline: none;
+            letter-spacing: 0.3px;
+        }
+
+        .guest-btn:hover {
+            background: rgba(80, 200, 255, 0.15);
+            color: #ffffff;
+            border-color: rgba(130, 225, 255, 0.70);
+            box-shadow:
+                0 0 0.8em 0.2em rgba(80, 200, 255, 0.35),
+                0 0 2.5em 0.8em rgba(60, 180, 255, 0.20),
+                inset 0 0 0.4em 0.1em rgba(80, 200, 255, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .guest-btn:focus-visible {
+            outline: 2px solid #8fb6f5;
+            outline-offset: 2px;
+        }
+
+        .guest-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(80, 200, 255, 0.06) 0%, transparent 70%);
+            animation: guestPulse 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes guestPulse {
+            0%,
+            100% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        .back {
+            text-align: center;
+            margin-top: 18px;
+        }
+
+        .back span {
+            color: var(--color-text-dim);
+            font-size: 13px;
+            letter-spacing: 0.3px;
+        }
+
+        /* ============================================================
+               17. 响应式适配
+               ============================================================ */
+        @media (max-width: 480px) {
+            .login-box {
+                width: 92%;
+                padding: 24px 16px 20px;
+            }
+
+            .moon {
+                width: 60px;
+                height: 60px;
+                left: 8%;
+                top: 8%;
+            }
+
+            .beam-glow {
+                width: 380px;
+            }
+            .beam-main {
+                width: 300px;
+            }
+
+            .lighthouse {
+                right: 10%;
+                bottom: 22%;
+                transform: scale(0.85);
+            }
+
+            .whale-wrap {
+                transform: scale(1.0);
+                left: 8%;
+                bottom: 6%;
+            }
+            .dolphin-wrap {
+                transform: scale(1.0);
+                left: 8%;
+                bottom: 14%;
+            }
+
+            .sea-reflection {
+                width: 100px;
+                height: 16px;
+                right: 10%;
+            }
+
+            .title {
+                font-size: 20px;
+            }
+            .subtitle {
+                font-size: 13px;
+            }
+
+            .floating-group input {
+                height: 48px;
+                padding: 16px 12px 6px;
+                font-size: 14px;
+            }
+            .floating-group label {
+                font-size: 13px;
+                left: 12px;
+            }
+            .floating-group input:focus+label,
+            .floating-group input:not(:placeholder-shown)+label {
+                font-size: 10px;
+                top: 4px;
+            }
+
+            #loginBtn {
+                font-size: 15px;
+                height: 50px;
+                padding: 0.8em 1.5em;
+                border-radius: 1em;
+            }
+            .guest-btn {
+                padding: 10px;
+                font-size: 13px;
+            }
+            .login-options label,
+            .login-options a {
+                font-size: 12px;
+            }
+
+            .mountains {
+                bottom: 24%;
+                height: 100px;
+            }
+            .mountain-1,
+            .mountain-2,
+            .mountain-3,
+            .mountain-4,
+            .mountain-5,
+            .mountain-6 {
+                display: none;
+            }
+            .mountain-1 {
+                display: block;
+                left: -5%;
+                width: 50%;
+                clip-path: polygon(0% 100%, 20% 18%, 50% 40%, 80% 12%, 100% 100%);
+            }
+            .mountain-3 {
+                display: block;
+                left: 35%;
+                width: 45%;
+                clip-path: polygon(0% 100%, 18% 22%, 45% 10%, 75% 35%, 100% 100%);
+            }
+            .mountain-5 {
+                display: block;
+                left: 10%;
+                width: 40%;
+                clip-path: polygon(0% 100%, 30% 25%, 60% 8%, 100% 100%);
+                opacity: 0.4;
+                filter: blur(2px);
+            }
+        }
+
+        @media (max-width: 380px) {
+            .login-box {
+                padding: 20px 12px 16px;
+            }
+            .title {
+                font-size: 18px;
+            }
+            .subtitle {
+                font-size: 12px;
+            }
+            .floating-group input {
+                height: 44px;
+                font-size: 13px;
+                padding: 14px 10px 4px;
+            }
+            #loginBtn {
+                font-size: 14px;
+                height: 44px;
+                padding: 0.6em 1.2em;
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            body {
+                background: linear-gradient(180deg, #1a2a4a 0%, #0f1a2e 100%);
+            }
+            .login-box {
+                background: rgba(30, 45, 70, 0.85);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 月亮 -->
+    <div class="moon" aria-hidden="true"></div>
+
+    <!-- 星星（JS生成） -->
+
+    <!-- 飞鸟 -->
+    <div class="bird bird-1" aria-hidden="true">
+        <div class="bird-wing left"></div>
+        <div class="bird-wing right"></div>
+    </div>
+    <div class="bird bird-2" aria-hidden="true">
+        <div class="bird-wing left"></div>
+        <div class="bird-wing right"></div>
+    </div>
+    <div class="bird bird-3" aria-hidden="true">
+        <div class="bird-wing left"></div>
+        <div class="bird-wing right"></div>
+    </div>
+
+    <!-- 流星 -->
+    <div class="shooting-star shooting-star-1" aria-hidden="true"></div>
+    <div class="shooting-star shooting-star-2" aria-hidden="true"></div>
+    <div class="shooting-star shooting-star-3" aria-hidden="true"></div>
+
+    <!-- 云朵（JS生成） -->
+
+    <!-- 山峦 -->
+    <div class="mountains" aria-hidden="true">
+        <div class="mountain mountain-1 mountain--front"><div class="mountain-snow"></div></div>
+        <div class="mountain mountain-2 mountain--front"><div class="mountain-snow"></div></div>
+        <div class="mountain mountain-3 mountain--front"><div class="mountain-snow"></div></div>
+        <div class="mountain mountain-4 mountain--front"><div class="mountain-snow"></div></div>
+        <div class="mountain mountain-5 mountain--back"><div class="mountain-snow"></div></div>
+        <div class="mountain mountain-6 mountain--back"><div class="mountain-snow"></div></div>
+    </div>
+
+    <!-- 海天交界 -->
+    <div class="horizon" aria-hidden="true"></div>
+
+    <!-- 海豚 -->
+    <div class="dolphin-wrap" aria-hidden="true">
+        <div class="dolphin">
+            <div class="dolphin-eye"></div>
+            <div class="dolphin-mouth"></div>
+        </div>
+        <div class="dolphin-ripple"></div>
+        <div class="dolphin-ripple dolphin-ripple-2"></div>
+    </div>
+
+    <!-- 鲸鱼 -->
+    <div class="whale-wrap" aria-hidden="true">
+        <div class="whale">
+            <div class="whale-dorsal"></div>
+            <div class="whale-tail"></div>
+            <div class="whale-fin"></div>
+            <div class="whale-eye"></div>
+            <div class="whale-belly"></div>
+            <div class="whale-dots">
+                <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="spout">
+                <div class="drop drop-1"></div>
+                <div class="drop drop-2"></div>
+                <div class="drop drop-3"></div>
+                <div class="drop drop-4"></div>
+                <div class="drop drop-5"></div>
+                <div class="drop drop-6"></div>
+                <div class="drop drop-7"></div>
+                <div class="drop drop-8"></div>
+                <div class="drop drop-9"></div>
+            </div>
+            <div class="spout-mist"></div>
+        </div>
+        <div class="splash">
+            <div class="splash-particle" style="--tx:-18px;--ty:-28px;animation-delay:0.1s;"></div>
+            <div class="splash-particle" style="--tx:14px;--ty:-32px;animation-delay:0.3s;"></div>
+            <div class="splash-particle" style="--tx:-8px;--ty:-38px;animation-delay:0.5s;"></div>
+            <div class="splash-particle" style="--tx:22px;--ty:-26px;animation-delay:0.2s;"></div>
+            <div class="splash-particle" style="--tx:-22px;--ty:-24px;animation-delay:0.4s;"></div>
+            <div class="splash-particle" style="--tx:6px;--ty:-34px;animation-delay:0.6s;"></div>
+            <div class="splash-particle" style="--tx:-14px;--ty:-30px;animation-delay:0.35s;"></div>
+            <div class="splash-particle" style="--tx:18px;--ty:-36px;animation-delay:0.55s;"></div>
+        </div>
+        <div class="whale-ripple"></div>
+        <div class="whale-ripple whale-ripple-2"></div>
+    </div>
+
+    <!-- 海洋 -->
+    <div class="sea" aria-hidden="true">
+        <div class="sea-shimmer"></div>
+        <div class="sea-reflection"></div>
+        <div class="sea-life" id="fishContainer"></div>
+    </div>
+
+    <!-- 灯塔小礁石 -->
+    <div class="l-islet" aria-hidden="true"></div>
+
+    <!-- 灯塔 -->
+    <div class="lighthouse" aria-hidden="true">
+        <div class="l-base"></div>
+        <div class="l-body"></div>
+        <div class="l-door"></div>
+        <div class="l-top"></div>
+        <div class="beam-glow"></div>
+        <div class="beam-main"></div>
+        <div class="l-light"></div>
+    </div>
+
+    <!-- 登录框 -->
+    <div class="login-box" role="main" aria-label="登录面板">
+        <div class="title">🔐 账号登录</div>
+        {% if msg %}
+        <div class="tip error" id="loginTip">{{ msg }}</div>
+        {% else %}
+        <div class="tip" id="loginTip"></div>
+        {% endif %}
+
+        <form method="post" id="loginForm" novalidate>
+            {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}" />{% endif %}
+
+            <div class="floating-group">
+                <input type="text" name="account" id="account" placeholder=" " required autofocus autocomplete="username" aria-describedby="loginTip" />
+                <label for="account">账号</label>
+            </div>
+
+            <div class="floating-group has-toggle">
+                <input type="password" name="pwd" id="pwd" placeholder=" " required autocomplete="current-password" aria-describedby="loginTip" />
+                <label for="pwd">密码</label>
+                <button type="button" class="pwd-toggle" id="pwdToggle" aria-label="显示密码" aria-pressed="false">
+                    <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg class="eye-slash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="login-options">
+                <label>
+                    <input type="checkbox" name="remember" />
+                    记住我
+                </label>
+                <a href="#" onclick="alert('请联系管理员重置密码'); return false;">忘记密码？</a>
+            </div>
+
+            <div class="btn-wrapper">
+                <button type="submit" id="loginBtn">
+                    <span class="btn-text">登 录</span>
+                    <span class="btn-loader"></span>
+                </button>
+            </div>
+        </form>
+
+        <a href="/" class="guest-btn">👤 访客模式浏览（无需登录）</a>
+
+        <div class="back">
+            <span>账号：工号 / 初始密码：123456</span>
+        </div>
+    </div>
+
+    <!-- ============================================================
+           JavaScript
+           ============================================================ -->
+    <script>
+        (function() {
+            'use strict';
+
+            // 判断是否在月亮附近（减少这里的星星）
+            function isNearMoon(top, left) {
+                const t = parseFloat(top);
+                const l = parseFloat(left);
+                // 月亮在 top:10%, left:12%，划定一个矩形禁区（稍微扩大范围）
+                if (t >= 2 && t <= 22 && l >= 2 && l <= 28) {
+                    return true;
+                }
+                return false;
+            }
+
+            // 1. 动态生成星星（含新增小圆点星星）
+            function createStars() {
+                const isMobile = window.innerWidth < 480;
+                const body = document.body;
+
+                // ---- 原有五角星星星 ----
+                const count = isMobile ? 10 : 20;
+                const sizes = ['star-sm', 'star-md', 'star-lg'];
+
+                for (let i = 0; i < count; i++) {
+                    let top = (Math.random() * 42 + 2) + '%';
+                    let left = (Math.random() * 92 + 2) + '%';
+
+                    // 如果落在月亮禁区，有 80% 概率跳过（减少月亮旁边的星星）
+                    if (isNearMoon(top, left) && Math.random() < 0.80) {
+                        continue;
+                    }
+
+                    const star = document.createElement('div');
+                    const size = sizes[i % sizes.length];
+                    star.className = size;
+                    star.setAttribute('aria-hidden', 'true');
+                    star.style.top = top;
+                    star.style.left = left;
+
+                    if (Math.random() < 0.4) {
+                        star.classList.add('star-twinkle');
+                        star.style.animationDelay = (Math.random() * 3) + 's';
+                        star.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+                    } else {
+                        star.classList.add('star-static');
+                        star.style.opacity = (0.4 + Math.random() * 0.4);
+                    }
+
+                    body.appendChild(star);
+                }
+
+                // ---- 新增：小圆点星星（很小的点，散乱分布） ----
+                const dotCount = isMobile ? 14 : 26;
+                for (let i = 0; i < dotCount; i++) {
+                    let top = (Math.random() * 72) + '%';
+                    let left = (Math.random() * 98) + '%';
+
+                    // 同样减少月亮旁边的小圆点星星
+                    if (isNearMoon(top, left) && Math.random() < 0.80) {
+                        continue;
+                    }
+
+                    const dot = document.createElement('div');
+                    dot.className = 'star-dot';
+                    dot.setAttribute('aria-hidden', 'true');
+                    dot.style.top = top;
+                    dot.style.left = left;
+
+                    // 极小尺寸：2–5px
+                    const size = 2 + Math.random() * 3.5;
+                    dot.style.width = size + 'px';
+                    dot.style.height = size + 'px';
+
+                    // 透明度 0.15–0.65，部分更暗淡
+                    dot.style.opacity = (0.15 + Math.random() * 0.5);
+
+                    // 约 20% 的小点有微弱闪烁
+                    if (Math.random() < 0.2) {
+                        dot.style.animation = 'starDotTwinkle ' + (2.5 + Math.random() * 3.5) +
+                            's ease-in-out infinite';
+                        dot.style.animationDelay = (Math.random() * 4) + 's';
+                    }
+
+                    body.appendChild(dot);
+                }
+            }
+
+            // 2. 动态生成云朵
+            function createClouds() {
+                const container = document.body;
+                const cloudConfigs = [
+                    // 第一朵（左边大云）
+                    { top: '6%', left: '-420px', duration: '125s', scale: 1.25, type: 'near' },
+                    // 第二朵（中间云）—— 特意缩小到 0.40，比之前更小，确保明显不同
+                    { top: '18%', left: '28%', duration: '90s', scale: 0.40, type: 'mid' },
+                    // 第三朵（右边云）
+                    { top: '34%', left: '62%', duration: '140s', scale: 0.74, type: 'far' },
+                    // 第四朵（额外的一朵，不影响"最开始的三朵"）
+                    { top: '24%', left: '16%', duration: '105s', scale: 0.86, type: 'mid' },
+                ];
+
+                cloudConfigs.forEach((cfg, idx) => {
+                    const cloud = document.createElement('div');
+                    cloud.className = 'cloud cloud--' + cfg.type;
+                    cloud.setAttribute('aria-hidden', 'true');
+                    cloud.style.top = cfg.top;
+                    cloud.style.left = cfg.left;
+                    cloud.style.animationDuration = cfg.duration;
+                    cloud.style.transform = 'scale(' + cfg.scale + ')';
+
+                    const parts = [
+                        { w: 90, h: 90, t: -45, l: 25 },
+                        { w: 70, h: 70, t: -35, l: 90 },
+                        { w: 50, h: 50, t: -20, l: 60, cls: 'layer' },
+                    ];
+
+                    parts.forEach((p) => {
+                        const part = document.createElement('div');
+                        part.className = 'cloud-part' + (p.cls ? ' ' + p.cls : '');
+                        part.style.width = p.w + 'px';
+                        part.style.height = p.h + 'px';
+                        part.style.top = p.t + 'px';
+                        part.style.left = p.l + 'px';
+                        cloud.appendChild(part);
+                    });
+
+                    container.appendChild(cloud);
+                });
+            }
+
+            // 3. 鱼群系统
+            function initFishSchool() {
+                const container = document.getElementById('fishContainer');
+                if (!container) return;
+
+                const isMobile = window.innerWidth < 480;
+                const fishCount = isMobile ? 12 : 24;
+
+                const colors = [
+                    '#7df9ff', '#8af7ff', '#6fe8ff', '#7df9ff',
+                    '#8af7ff', '#6fe8ff', '#7df9ff', '#8af7ff'
+                ];
+
+                const fishes = [];
+
+                for (let i = 0; i < fishCount; i++) {
+                    const fish = document.createElement('div');
+                    fish.className = 'fish';
+
+                    const scale = 0.5 + Math.random() * 0.8;
+                    const w = 38 * scale;
+                    const h = 19 * scale;
+                    fish.style.width = w + 'px';
+                    fish.style.height = h + 'px';
+
+                    const containerHeight = container.clientHeight || window.innerHeight * 0.28;
+                    const containerWidth = container.clientWidth || window.innerWidth;
+
+                    const yPos = 10 + Math.random() * (containerHeight * 0.7);
+                    const xPos = -w + Math.random() * (containerWidth + w * 2);
+
+                    fish.style.top = yPos + 'px';
+                    fish.style.left = xPos + 'px';
+
+                    const direction = Math.random() > 0.5 ? 1 : -1;
+                    const speed = 0.3 + Math.random() * 0.9;
+                    const wiggleAmp = 1.2 + Math.random() * 3.5;
+                    const wiggleFreq = 2 + Math.random() * 3.5;
+
+                    const colorIdx = Math.floor(Math.random() * colors.length);
+                    const color = colors[colorIdx];
+
+                    const eyeX = 9 * scale;
+                    const eyeY = 9 * scale;
+
+                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('viewBox', '0 0 40 20');
+                    svg.setAttribute('width', '100%');
+                    svg.setAttribute('height', '100%');
+
+                    const bodyPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    bodyPath.setAttribute('d', 'M3,10 C 10,3 26,3 31,10 C 26,17 10,17 3,10 Z');
+                    bodyPath.setAttribute('fill', color);
+                    bodyPath.setAttribute('filter', 'url(#glow)');
+
+                    const tailPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    tailPath.setAttribute('d', 'M31,10 L39,4 L35,10 L39,16 Z');
+                    tailPath.setAttribute('fill', '#c7faff');
+                    tailPath.setAttribute('opacity', '0.8');
+
+                    const eye = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    eye.setAttribute('cx', eyeX);
+                    eye.setAttribute('cy', eyeY);
+                    eye.setAttribute('r', 1.5 * scale);
+                    eye.setAttribute('fill', '#0a2a44');
+
+                    const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    highlight.setAttribute('cx', (eyeX + 1.5 * scale));
+                    highlight.setAttribute('cy', (eyeY - 1.2 * scale));
+                    highlight.setAttribute('r', 0.6 * scale);
+                    highlight.setAttribute('fill', 'rgba(255,255,255,0.5)');
+
+                    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                    const filter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+                    filter.setAttribute('id', 'glow');
+                    filter.setAttribute('x', '-20%');
+                    filter.setAttribute('y', '-20%');
+                    filter.setAttribute('width', '140%');
+                    filter.setAttribute('height', '140%');
+
+                    const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+                    feGaussianBlur.setAttribute('stdDeviation', '2');
+                    feGaussianBlur.setAttribute('result', 'blur');
+
+                    const feMerge = document.createElementNS('http://www.w3.org/2000/svg', 'feMerge');
+                    const feMergeNode1 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+                    feMergeNode1.setAttribute('in', 'blur');
+                    const feMergeNode2 = document.createElementNS('http://www.w3.org/2000/svg', 'feMergeNode');
+                    feMergeNode2.setAttribute('in', 'SourceGraphic');
+
+                    feMerge.appendChild(feMergeNode1);
+                    feMerge.appendChild(feMergeNode2);
+                    filter.appendChild(feGaussianBlur);
+                    filter.appendChild(feMerge);
+                    defs.appendChild(filter);
+                    svg.appendChild(defs);
+
+                    svg.appendChild(bodyPath);
+                    svg.appendChild(tailPath);
+                    svg.appendChild(eye);
+                    svg.appendChild(highlight);
+
+                    fish.appendChild(svg);
+
+                    fish.style.transform = direction === 1 ? 'scaleX(-1)' : 'scaleX(1)';
+
+                    container.appendChild(fish);
+
+                    fishes.push({
+                        el: fish,
+                        x: xPos,
+                        y: yPos,
+                        direction: direction,
+                        speed: speed,
+                        wiggleAmp: wiggleAmp,
+                        wiggleFreq: wiggleFreq,
+                        phase: Math.random() * Math.PI * 2,
+                        scale: scale,
+                        containerWidth: containerWidth,
+                        containerHeight: containerHeight,
+                        yOffset: 0,
+                        yAmp: 4 + Math.random() * 18,
+                        yFreq: 0.25 + Math.random() * 0.6,
+                        yPhase: Math.random() * Math.PI * 2,
+                    });
+                }
+
+                let lastTime = 0;
+                let fishAnimId = null;
+
+                function animateFish(time) {
+                    const delta = lastTime ? (time - lastTime) / 1000 : 0.016;
+                    lastTime = time;
+
+                    // 获取海洋容器（.sea）的实际宽度
+                    const seaContainer = container.parentElement;
+                    const seaRect = seaContainer.getBoundingClientRect();
+                    const seaWidth = window.innerWidth + 800;  // 比屏幕宽 200px
+                    const seaHeight = window.innerHeight * 0.28;
+
+                    // 鱼的可用范围（留边距，让鱼不会碰到边缘）
+                    const padding = 5;
+                    const usableWidth = seaWidth - padding * 2;
+                    const usableHeight = seaHeight - padding * 2;
+
+                    fishes.forEach((fish) => {
+                        // 更新位置
+                        fish.x += fish.direction * fish.speed * 60 * delta;
+                        fish.yPhase += delta * fish.yFreq;
+                        fish.yOffset = Math.sin(fish.yPhase) * fish.yAmp;
+                        fish.phase += delta * fish.wiggleFreq;
+                        const wiggle = Math.sin(fish.phase) * fish.wiggleAmp;
+
+                        const fishWidth = 38 * fish.scale;
+                        const fishHeight = 19 * fish.scale;
+
+                        // ===== X 轴边界：鱼碰到边界就掉头 =====
+                        // 左边界
+                        const leftBoundary = padding;
+                        // 右边界（减去鱼的宽度）
+                        const rightBoundary = usableWidth - fishWidth;
+
+                        if (fish.x > rightBoundary) {
+                            fish.direction = -1;
+                            fish.x = rightBoundary;
+                        } else if (fish.x < leftBoundary) {
+                            fish.direction = 1;
+                            fish.x = leftBoundary;
+                        }
+
+                        // Y 轴边界（也加上限制，防止鱼游到海洋外面）
+                        const finalY = fish.y + fish.yOffset;
+                        if (finalY < padding) {
+                            fish.yPhase = -fish.yPhase;
+                            fish.y = padding - fish.yOffset;
+                        } else if (finalY > usableHeight - fishHeight) {
+                            fish.yPhase = -fish.yPhase;
+                            fish.y = usableHeight - fishHeight - fish.yOffset;
+                        }
+
+                        // 应用变换
+                        const correctedY = fish.y + fish.yOffset;
+                        fish.el.style.left = fish.x + 'px';
+                        fish.el.style.top = correctedY + 'px';
+
+                        const baseScale = fish.direction === 1 ? 'scaleX(-1)' : 'scaleX(1)';
+                        fish.el.style.transform = baseScale + ' rotate(' + wiggle + 'deg) scaleY(' + (1 + Math.sin(fish.phase * 0.5) * 0.02) + ')';
+                    });
+
+                    fishAnimId = requestAnimationFrame(animateFish);
+                }
+                fishAnimId = requestAnimationFrame(animateFish);      
+
+                let resizeTimer;
+                window.addEventListener('resize', function() {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => {
+                        const rect = container.getBoundingClientRect();
+                        fishes.forEach((fish) => {
+                            fish.containerWidth = rect.width || window.innerWidth;
+                            fish.containerHeight = rect.height || window.innerHeight * 0.28;
+                        });
+                    }, 200);
+                });
+
+                return function cleanup() {
+                    if (fishAnimId) {
+                        cancelAnimationFrame(fishAnimId);
+                        fishAnimId = null;
+                    }
+                };
+            }
+
+            // 4. 表单交互
+            function initForm() {
+                const form = document.getElementById('loginForm');
+                const btn = document.getElementById('loginBtn');
+                const tip = document.getElementById('loginTip');
+                const account = document.getElementById('account');
+                const pwd = document.getElementById('pwd');
+
+                // 实时清除错误（不阻止提交）
+                account.addEventListener('input', function() {
+                    if (tip.classList.contains('error')) {
+                        clearTip();
+                    }
+                });
+                pwd.addEventListener('input', function() {
+                    if (tip.classList.contains('error')) {
+                        clearTip();
+                    }
+                });
+
+                function showTip(msg, type) {
+                    tip.textContent = msg;
+                    tip.className = 'tip ' + (type || '');
+                }
+
+                function clearTip() {
+                    tip.textContent = '';
+                    tip.className = 'tip';
+                }
+
+                form.addEventListener('submit', function(e) {
+                    // 始终阻止原生提交：/login 只接受 GET，原生 POST 会触发 405/500
+                    // 改用 AJAX 调用真正的登录接口 /api/login
+                    e.preventDefault();
+
+                    const accountVal = account.value.trim();
+                    const pwdVal = pwd.value;
+
+                    // 前端基本校验，仅阻止空提交
+                    if (!accountVal) {
+                        showTip('⚠️ 请输入账号', 'error');
+                        account.focus();
+                        return;
+                    }
+                    if (!pwdVal) {
+                        showTip('⚠️ 请输入密码', 'error');
+                        pwd.focus();
+                        return;
+                    }
+
+                    // 显示加载状态
+                    btn.classList.add('loading');
+                    btn.disabled = true;
+
+                    // 取出 next 参数：优先表单隐藏域，否则取 URL query
+                    const nextInput = form.querySelector('input[name="next"]');
+                    let nextVal = (nextInput && nextInput.value) || '';
+                    if (!nextVal) {
+                        try {
+                            nextVal = new URLSearchParams(location.search).get('next') || '';
+                        } catch (err) { nextVal = ''; }
+                    }
+
+                    fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ account: accountVal, password: pwdVal, next: nextVal })
+                    })
+                    .then(function(resp) {
+                        return resp.json().then(function(d) { return { ok: resp.ok, data: d }; });
+                    })
+                    .then(function(res) {
+                        const data = res.data || {};
+                        if (res.ok && data.code === 200) {
+                            const redirect = (data.data && data.data.redirect) || '/';
+                            window.location.href = redirect;
+                        } else {
+                            showTip('⚠️ ' + (data.msg || '登录失败'), 'error');
+                            btn.classList.remove('loading');
+                            btn.disabled = false;
+                        }
+                    })
+                    .catch(function() {
+                        showTip('⚠️ 网络错误，请稍后重试', 'error');
+                        btn.classList.remove('loading');
+                        btn.disabled = false;
+                    });
+                });
+
+                // 密码显隐切换
+                const pwdToggle = document.getElementById('pwdToggle');
+                if (pwdToggle) {
+                    pwdToggle.addEventListener('click', function() {
+                        const revealed = pwd.type === 'text';
+                        pwd.type = revealed ? 'password' : 'text';
+                        this.classList.toggle('visible', !revealed);
+                        this.setAttribute('aria-label', revealed ? '显示密码' : '隐藏密码');
+                        this.setAttribute('aria-pressed', revealed ? 'false' : 'true');
+                        pwd.focus();
+                    });
+                }
+
+                // 如果后端传入了错误信息，自动添加 error 类
+                if (tip && tip.textContent.trim() !== '') {
+                    tip.classList.add('error');
+                }
+            }
+
+            // 5. 忘记密码（已改为行内 alert，无需额外函数）
+
+            // 6. 初始化
+            document.addEventListener('DOMContentLoaded', function() {
+                createStars();
+                createClouds();
+                const cleanupFish = initFishSchool();
+                initForm();
+
+                const tipEl = document.getElementById('loginTip');
+                if (tipEl && tipEl.textContent.trim() !== '') {
+                    tipEl.className = 'tip error';
+                }
+
+                window.addEventListener('beforeunload', function() {
+                    if (cleanupFish) cleanupFish();
+                });
+
+                let orientationTimer;
+                window.addEventListener('orientationchange', function() {
+                    clearTimeout(orientationTimer);
+                    orientationTimer = setTimeout(function() {}, 300);
+                });
+            });
+
+        })();
+    </script>
+
+</body>
+</html>

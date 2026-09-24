@@ -1,0 +1,76 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}🏢 工作自动化流程{% endblock %}
+
+{% block extra_css %}
+{# 与工具箱同一套样式：界面和原 toolbox「工作自动化流程」分类完全一致 #}
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox/workspace.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox/ai_assistant.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="toolbox-page" id="toolbox-app">
+  <!-- 一级分类 Tab 栏 -->
+  <div class="tb-category-bar" id="category-bar">
+    <!-- JS 动态渲染 -->
+  </div>
+
+  <!-- 二级分类 Pill 栏 -->
+  <div class="tb-sub-bar" id="sub-bar">
+    <!-- JS 动态渲染 -->
+  </div>
+
+  <!-- 内容区 -->
+  <div class="tb-content-wrapper" id="content-area">
+    <!-- JS 动态渲染工具面板 -->
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 配置文件（说明文本在此） -->
+<script src="{{ url_for('static', filename='toolbox/tools-config.js') }}"></script>
+<!-- 组件 -->
+<script src="{{ url_for('static', filename='toolbox/components/upload-zone.js') }}"></script>
+<script src="{{ url_for('static', filename='toolbox/components/file-list.js') }}"></script>
+<script src="{{ url_for('static', filename='toolbox/components/progress-bar.js') }}"></script>
+<script src="{{ url_for('static', filename='toolbox/components/result-panel.js') }}"></script>
+<!-- 工作区（持久文件池） -->
+<script src="{{ url_for('static', filename='toolbox/workspace.js') }}"></script>
+<!-- AI 工具助手 -->
+<script src="{{ url_for('static', filename='toolbox/ai_assistant.js') }}"></script>
+<script>
+  // ============ workflow 页面注入（在 app.js 初始化前同步执行） ============
+  // 1) 接口基址：本页的上传/运行/SSE/下载都走 workflow 模块的桥接端点
+  //    （${TOOLBOX_API_BASE}/toolbox/api/...），私有流程不经 toolbox 公开入口。
+  window.TOOLBOX_API_BASE = '/workflow';
+
+  // 2) 本机已安装流程（服务端注入，同步无竞态），映射成工具箱标准工具配置。
+  //    字段映射与原 toolbox app.js loadAutomationFlows 完全一致。
+  const WF_FLOWS = {{ flows | tojson }};
+  WF_FLOWS.forEach(f => {
+    if (TOOLBOX_CONFIG.tools[f.id]) return;
+    TOOLBOX_CONFIG.tools[f.id] = {
+      category: 'automation',
+      label: (f.icon ? f.icon + ' ' : '') + f.name,
+      accept: f.accept || null,
+      maxSize: 100,
+      maxCount: 10,
+      needUpload: !!f.accept,
+      stream: !!f.stream,
+      help: { title: f.name, desc: f.desc || '' },
+      params: f.params || []
+    };
+  });
+
+  // 3) 本页只保留「工作自动化流程」分类（配置原样取自 tools-config.js 同款定义）
+  TOOLBOX_CONFIG.categories = [
+    { id: 'automation', label: '工作自动化流程', icon: '🤖', color: '#ff922b' }
+  ];
+  if (!TOOLBOX_CONFIG.groups) TOOLBOX_CONFIG.groups = {};
+  TOOLBOX_CONFIG.groups.automation = [{ id: 'main', label: '可用流程' }];
+</script>
+<!-- 核心逻辑（读到上面注入好的配置后初始化） -->
+<script src="{{ url_for('static', filename='toolbox/app.js') }}"></script>
+{% endblock %}

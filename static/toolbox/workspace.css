@@ -1,0 +1,211 @@
+/* ================================================================
+   工作区面板（Phase 2 工作区上传）— 新拟态，复用 toolbox 变量体系
+   ================================================================ */
+.ws-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 26, 38, 0.35);
+}
+
+/* 暗色：仅工作区弹窗跟随（layout_base.js 用 body.dark），不影响工具箱其它区域 */
+body.dark .ws-modal {
+  --bg: #1a1d23;
+  --text: #a0aec0;
+  --text-heading: #e2e8f0;
+  --shadow-light: #2a2e36;
+  --shadow-dark: #0f1115;
+}
+
+.ws-modal {
+  width: 560px;
+  max-width: 92vw;
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--radius, 16px);
+  box-shadow: 8px 8px 18px var(--shadow-dark), -8px -8px 18px var(--shadow-light);
+}
+
+.ws-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ws-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+.ws-x {
+  border: none;
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  transition: var(--transition);
+}
+.ws-x:active {
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+}
+.ws-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.78;
+}
+
+.ws-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ws-btn {
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 50px;
+  padding: 8px 16px;
+  box-shadow: 4px 4px 9px var(--shadow-dark), -4px -4px 9px var(--shadow-light);
+  transition: var(--transition);
+}
+.ws-btn:hover {
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+.ws-btn:active {
+  transform: translateY(0);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+.ws-btn.primary {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: var(--primary);
+}
+.ws-btn.is-disabled,
+.ws-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 4px 4px 9px var(--shadow-dark), -4px -4px 9px var(--shadow-light);
+}
+
+.ws-status {
+  font-size: 12px;
+  min-height: 16px;
+  color: var(--text);
+}
+.ws-status-ok { color: #2f9e6f; }
+.ws-status-err { color: #e0533d; }
+
+.ws-list {
+  flex: 1 1 auto;
+  min-height: 120px;
+  max-height: 46vh;
+  overflow-y: auto;
+  border-radius: var(--radius-sm, 12px);
+  padding: 8px;
+  background: var(--bg);
+  box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light);
+}
+
+.ws-empty {
+  padding: 26px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.ws-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-sm, 12px);
+  cursor: pointer;
+  background: var(--bg);
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  transition: var(--transition);
+}
+.ws-item:last-child { margin-bottom: 0; }
+.ws-item:hover { transform: translateY(-1px); }
+.ws-item.on {
+  box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light),
+              0 0 0 2px var(--primary);
+  color: var(--primary);
+}
+.ws-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ws-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-item.on .ws-name { color: var(--primary); }
+.ws-meta {
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.7;
+}
+.ws-check {
+  flex: 0 0 auto;
+  width: 18px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--primary);
+}
+
+/* 工具面板里的工作区入口按钮 */
+.ws-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ws-entry-hint {
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.75;
+}
+.ws-entry-btn {
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 50px;
+  padding: 7px 14px;
+  box-shadow: 3px 3px 7px var(--shadow-dark), -3px -3px 7px var(--shadow-light);
+  transition: var(--transition);
+}
+.ws-entry-btn:hover { color: var(--primary); }
+.ws-entry-btn:active {
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+}

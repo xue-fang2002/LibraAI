@@ -1,0 +1,562 @@
+{% extends "layout_base.html" %}
+{% block page_title %}{{ app_name }} - 我的私有图书{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/book_neu.css') }}">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "微软雅黑", sans-serif; }
+    .mb-ws { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column;
+        background: var(--neu-bg); color: var(--neu-text); overflow: hidden; }
+
+    /* ---- 深蓝标题栏（与首页/阅读中心一致） ---- */
+    .header-top { background: var(--neu-brand-deep); color: var(--neu-on-brand); text-align: center;
+        padding: 14px; font-size: 22px; font-weight: bold; flex-shrink: 0; position: relative; z-index: 5;
+        display: flex; justify-content: center; align-items: center; gap: 10px; }
+    .mb-back-btn { position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+        background: rgba(255,255,255,0.14); color: #fff; border: 1px solid rgba(255,255,255,0.28);
+        padding: 5px 12px; border-radius: 10px; font-size: 14px; text-decoration: none; cursor: pointer;
+        white-space: nowrap; transition: all 0.18s ease; }
+    .mb-back-btn:hover { background: rgba(255,255,255,0.24); color: #fff; text-decoration: none; }
+    .div-line { height: 1px; background: rgba(222,228,236,0.4); flex-shrink: 0; }
+
+    /* ---- 个人统计卡片条 ---- */
+    .stats-bar { display: flex; gap: 12px; padding: 12px 10px; flex-shrink: 0; }
+    .stat-card { flex: 1; background: var(--neu-bg-accent); border: 1px solid var(--neu-border);
+        border-radius: 14px; padding: 12px 16px; text-align: center;
+        box-shadow: 4px 4px 10px var(--neu-shadow-dark-2), -4px -4px 10px var(--neu-shadow-light); }
+    .stat-num { font-size: 24px; font-weight: bold; color: var(--neu-brand-deep); }
+    .stat-label { font-size: 12px; color: var(--neu-text-sub); margin-top: 4px; }
+    .stat-card.c-books .stat-num { color: #2A4365; }
+    .stat-card.c-cats .stat-num { color: #6b8cae; }
+    .stat-card.c-global .stat-num { color: #5a8a6e; }
+    .stat-card.c-private .stat-num { color: #8b6bae; }
+
+    /* ---- 公共图书馆搜索（嵌入，与首页同款：图标在框内） ---- */
+    .search-row { background: var(--neu-toolbar); padding: 10px 16px; display: flex; align-items: center;
+        gap: 14px; flex-shrink: 0; flex-wrap: wrap; }
+    .search-wrap-in { position: relative; flex: 0 1 240px; max-width: 240px; }
+
+    /* 归属切换（与搜索框同一行，深蓝底上用「半透明白 / 选中深蓝+白边」，与首页一级分类一致） */
+    .owner-group { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .owner-label { font-size: 13px; color: var(--neu-on-brand); opacity: 0.85; flex-shrink: 0; }
+    .owner-btn { padding: 6px 14px; border-radius: 12px; font-size: 13px; cursor: pointer;
+        background: rgba(255,255,255,0.14); color: #fff; border: 1px solid rgba(255,255,255,0.28);
+        white-space: nowrap; transition: all 0.18s ease; }
+    .owner-btn:hover { background: rgba(255,255,255,0.24); color: #fff; }
+    .owner-btn.active { background: var(--neu-brand-deep); color: #fff; font-weight: bold;
+        border: 2px solid rgba(255,255,255,0.9); }
+    .owner-count { font-size: 12px; color: var(--neu-on-brand); opacity: 0.85; margin-left: auto; flex-shrink: 0; }
+    .search-wrap-in input {
+        width: 100%; padding: 8px 12px 8px 34px; border: 1px solid var(--neu-border); border-radius: 10px;
+        font-size: 14px; outline: none; background: var(--neu-bg); color: var(--neu-text);
+        box-shadow: inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light); }
+    .search-wrap-in input::placeholder { color: var(--neu-text-sub); }
+    .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+        font-size: 14px; color: var(--neu-text-sub); cursor: pointer; z-index: 2; transition: color 0.18s ease; }
+    .search-icon:hover { color: var(--neu-accent); }
+
+    /* ---- 方案A 筛选条：归属切换 + 一级分类 ---- */
+    .filter-bar { background: var(--neu-bg-accent); padding: 10px 14px; flex-shrink: 0;
+        display: flex; flex-direction: column; gap: 8px; }
+    .f-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .f-label { font-size: 13px; color: var(--neu-text-sub); flex-shrink: 0; }
+    .f-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .f-btn { padding: 5px 14px; border-radius: 12px; font-size: 13px; cursor: pointer;
+        background: var(--neu-bg); color: var(--neu-text); border: 1px solid var(--neu-border);
+        box-shadow: 2px 2px 5px var(--neu-shadow-dark), -2px -2px 5px var(--neu-shadow-light);
+        transition: all 0.18s ease; }
+    .f-btn:hover { color: var(--neu-accent); }
+    .f-btn.active { background: var(--neu-brand-deep); color: #fff; border-color: var(--neu-brand-deep);
+        box-shadow: inset 2px 2px 4px rgba(0,0,0,0.18); }
+    .f-btn.active:hover { color: #fff; }
+    .f-empty { font-size: 13px; color: var(--neu-text-sub); }
+    .f-count { font-size: 12px; color: var(--neu-text-sub); margin-left: auto; }
+
+    /* ---- 展开/收起上传区按钮 ---- */
+    /* 上传/新建按钮：位于深蓝工具栏行末尾，浅底实色（不用灰凸起阴影，否则深底上发脏） */
+    .mb-toggle-upload { flex-shrink: 0; margin-left: 4px;
+        background: var(--neu-bg); color: var(--neu-brand-deep); border: 1px solid var(--neu-border);
+        padding: 6px 14px; border-radius: 12px; font-size: 13px; font-weight: 600; cursor: pointer;
+        white-space: nowrap; box-shadow: none; transition: all 0.18s ease; }
+    .mb-toggle-upload:hover { background: #ffffff; color: var(--neu-brand-deep); }
+    body.dark .mb-toggle-upload { background: var(--neu-btn-bg); color: var(--neu-on-brand);
+        border: 1px solid rgba(255,255,255,0.10); box-shadow: 3px 3px 7px #0d1014, -3px -3px 7px #3a4452; }
+    body.dark .mb-toggle-upload:hover { background: #3a4452; color: #ffffff; }
+
+    /* ---- 上传 / 分类面板 ---- */
+    .mb-panel { background: var(--neu-bg-accent); border: 1px solid var(--neu-border); border-radius: 14px;
+        margin: 10px 10px 0 10px; padding: 12px 14px; flex-shrink: 0;
+        box-shadow: 5px 5px 10px var(--neu-shadow-dark-2), -5px -5px 10px var(--neu-shadow-light); }
+    .mb-panel-title { font-size: 15px; font-weight: bold; color: var(--neu-accent); margin-bottom: 10px;
+        display: flex; align-items: center; gap: 8px; }
+    .mb-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+        font-size: 13px; color: var(--neu-text); }
+    .mb-row select, .mb-row input[type=text] {
+        padding: 5px 10px; border: 1px solid var(--neu-border); border-radius: 10px;
+        font-size: 13px; outline: none; background: var(--neu-bg-accent); color: var(--neu-text);
+        box-shadow: inset 2px 2px 5px var(--neu-shadow-dark-2), inset -2px -2px 5px var(--neu-shadow-light); }
+    .mb-row select:focus, .mb-row input[type=text]:focus { border-color: var(--neu-accent-soft); }
+    .mb-btn { padding: 5px 12px; border: 1px solid var(--neu-border); border-radius: 10px; cursor: pointer;
+        font-size: 13px; color: var(--neu-text); background: var(--neu-bg);
+        box-shadow: 3px 3px 7px var(--neu-shadow-dark), -3px -3px 7px var(--neu-shadow-light);
+        transition: all 0.18s ease; }
+    .mb-btn:hover { color: var(--neu-accent); }
+    .mb-btn:active { box-shadow: inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light); }
+    .mb-btn-ghost { color: var(--neu-text-sub); }
+    .mb-scope-tip { font-size: 12px; color: var(--neu-text-sub); margin-left: auto; }
+
+    .drop-zone { border: 1px solid var(--neu-border); border-radius: 14px; padding: 20px; text-align: center;
+        color: var(--neu-text-sub); cursor: pointer; transition: all 0.25s ease; font-size: 13px;
+        background: var(--neu-bg);
+        box-shadow: inset 4px 4px 8px var(--neu-shadow-dark), inset -4px -4px 8px var(--neu-shadow-light); }
+    .drop-zone:hover { color: var(--neu-accent); }
+    .drop-zone.drag-over { color: var(--neu-accent); border-color: var(--neu-accent-soft); }
+    .upload-list { margin-top: 8px; max-height: 140px; overflow-y: auto; }
+    .upload-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 10px;
+        margin-bottom: 5px; font-size: 13px; border-left: 3px solid var(--neu-accent);
+        background: var(--neu-bg); color: var(--neu-text);
+        box-shadow: inset 2px 2px 4px var(--neu-shadow-dark), inset -2px -2px 4px var(--neu-shadow-light); }
+
+    /* ---- 我的分类 chips ---- */
+    .pcat-list { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .pcat-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 14px;
+        padding: 4px 12px; font-size: 13px; background: var(--neu-bg); color: var(--neu-text);
+        box-shadow: inset 2px 2px 4px var(--neu-shadow-dark), inset -2px -2px 4px var(--neu-shadow-light); }
+    .pcat-chip.is-sub { font-size: 12px; color: var(--neu-text-sub); }
+    .pcat-chip .del { cursor: pointer; color: #c0392b; font-weight: bold; padding: 0 2px; }
+    .pcat-empty { color: var(--neu-text-sub); font-size: 13px; }
+
+    .mb-tip { padding: 12px 18px; color: var(--neu-text-sub); font-size: 14px; flex-shrink: 0;
+        background: var(--neu-bg-accent); margin: 8px 10px 0 10px; border-radius: 12px; }
+    .mb-tip b { color: var(--neu-accent); }
+
+    /* ---- 表格（归属/操作居中） ---- */
+    .table-wrap { margin: 10px; flex: 1; overflow-y: auto; border-radius: 14px; min-height: 0;
+        background: var(--neu-bg);
+        box-shadow: inset 4px 4px 8px var(--neu-shadow-dark), inset -4px -4px 8px var(--neu-shadow-light); }
+    table { width: 100%; border-collapse: collapse; }
+    table thead tr { background: var(--neu-bg); color: var(--neu-text); height: 34px; position: sticky; top: 0;
+        z-index: 10; box-shadow: 0 3px 6px var(--neu-shadow-dark); }
+    th { padding: 8px 12px; font-size: 14px; font-weight: bold; white-space: nowrap; color: var(--neu-text); }
+    th.td-center { text-align: center; }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--neu-bg-2); font-size: 14px; white-space: nowrap; color: var(--neu-text); }
+    td.td-center { text-align: center; }
+    .name-cell { text-align: left; max-width: 420px; }
+    .name-text { display: inline-block; max-width: 360px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+    a { color: #0066cc; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .file-icon { margin-right: 7px; font-size: 16px; }
+    .action-btns { display: flex; gap: 8px; align-items: center; justify-content: center; }
+    .action-btns button { padding: 4px 10px; border-radius: 8px; cursor: pointer; font-size: 12px;
+        background: var(--neu-bg); color: var(--neu-text); border: 1px solid var(--neu-border);
+        box-shadow: 2px 2px 5px var(--neu-shadow-dark), -2px -2px 5px var(--neu-shadow-light);
+        transition: all 0.18s ease; }
+    .action-btns button:hover { color: var(--neu-accent); }
+    .action-btns button:active { box-shadow: inset 2px 2px 4px var(--neu-shadow-dark), inset -2px -2px 4px var(--neu-shadow-light); }
+    /* 删除按钮：红色语义 */
+    .btn-delete { color: #c0392b !important; border-color: rgba(192,57,43,0.3) !important; }
+    .btn-delete:hover { background: #fbe4e4 !important; color: #c0392b !important; }
+    .empty-row td { text-align: center; padding: 40px; color: var(--neu-text-sub); font-size: 15px; }
+    tbody tr { transition: background 0.18s ease; }
+    tbody tr:hover { background-image: linear-gradient(0deg, var(--neu-accent-soft), var(--neu-accent-soft)); }
+    .lock-badge { color: #c0392b; font-weight: bold; margin-right: 4px; }
+    .src-tag { font-size: 11px; color: var(--neu-text-sub); border-radius: 8px; padding: 2px 8px; margin-left: 6px;
+        box-shadow: inset 1px 1px 3px var(--neu-shadow-dark), inset -1px -1px 3px var(--neu-shadow-light); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-ws">
+    <div class="header-top">
+        <a href="/book/" class="mb-back-btn">← 返回图书库</a>
+        <span>🔒</span>
+        <span>我的私有图书</span>
+    </div>
+    <div class="div-line"></div>
+
+    <!-- 个人统计卡片 -->
+    <div class="stats-bar">
+        <div class="stat-card c-books">
+            <div class="stat-num">{{ total }}</div>
+            <div class="stat-label">我的资料</div>
+        </div>
+        <div class="stat-card c-cats">
+            <div class="stat-num">{{ pcat1|length }}</div>
+            <div class="stat-label">我的分类</div>
+        </div>
+        <div class="stat-card c-global">
+            <div class="stat-num">{{ gcat1|length }}</div>
+            <div class="stat-label">全局分类</div>
+        </div>
+        <div class="stat-card c-private">
+            <div class="stat-num">{{ private_count | default(0) }}</div>
+            <div class="stat-label">仅私有可见</div>
+        </div>
+    </div>
+
+    <!-- 嵌入式公共图书馆搜索（与首页同款：图标在框内） -->
+    <div class="search-row">
+        <div class="search-wrap-in">
+            <span class="search-icon" onclick="applyFilter()" title="搜索我的资料">🔍</span>
+            <input type="text" id="mySearchInput" placeholder="搜索我的资料名称 / 分类..." autocomplete="off">
+        </div>
+        <div class="owner-group">
+            <span class="owner-label">归属</span>
+            <button class="owner-btn active" data-owner="all" onclick="setOwner('all')">全部</button>
+            <button class="owner-btn" data-owner="private" onclick="setOwner('private')">我的分类</button>
+            <button class="owner-btn" data-owner="global" onclick="setOwner('global')">全局分类</button>
+        </div>
+        <span class="owner-count" id="filterCount"></span>
+        <button class="mb-toggle-upload" id="toggleUploadBtn" onclick="toggleUploadArea()">⬆️ 上传 / 新建资料</button>
+    </div>
+
+    <!-- 方案A：一级分类筛选 -->
+    <div class="filter-bar">
+        <div class="f-row">
+            <span class="f-label">分类</span>
+            <span class="f-chips" id="c1Chips"></span>
+        </div>
+    </div>
+
+    <div id="uploadArea" style="display:none; width:100%;">
+    <!-- ============ 上传私有资料 ============ -->
+    <div class="mb-panel">
+        <div class="mb-panel-title">⬆️ 上传私有资料</div>
+        <div class="mb-row">
+            <label>归类到</label>
+            <select id="selScope" onchange="onScopeChange()">
+                <option value="global">全局分类</option>
+                <option value="private">我的分类</option>
+            </select>
+            <span id="wrapGlobal">
+                <select id="selG1" onchange="renderG2()"></select>
+                <select id="selG2"></select>
+            </span>
+            <span id="wrapPrivate" style="display:none">
+                <select id="selP1" onchange="renderP2()"></select>
+                <select id="selP2"></select>
+            </span>
+            <span class="mb-scope-tip" id="scopeTip"></span>
+        </div>
+        <div class="drop-zone" id="dropZone">
+            <div style="font-size:26px;margin-bottom:6px;">📁</div>
+            <div>拖拽文件到此处，或 <span style="color:#2A4365;font-weight:bold;">点击选择</span></div>
+            <div style="font-size:12px;color:#aaa;margin-top:4px;">上传后自动成为私有资料，仅你与管理员可见</div>
+            <input type="file" id="fileInput" multiple style="display:none;">
+        </div>
+        <div class="upload-list" id="uploadList"></div>
+    </div>
+
+    <!-- ============ 我的分类 ============ -->
+    <div class="mb-panel">
+        <div class="mb-panel-title">🗂️ 我的分类
+            <button class="mb-btn mb-btn-ghost" style="margin-left:auto;font-weight:normal;" onclick="toggleAddPcat()">+ 新建分类</button>
+        </div>
+        <div class="pcat-list" id="pcatList"></div>
+        <div class="mb-row" id="addPcatRow" style="display:none;margin-top:10px;">
+            <label><input type="radio" name="pcatLevel" value="1" checked onchange="toggleParentSel()"> 一级</label>
+            <label><input type="radio" name="pcatLevel" value="2" onchange="toggleParentSel()"> 二级</label>
+            <select id="selParent" onchange="void(0)" disabled></select>
+            <input type="text" id="pcatName" placeholder="分类名称" maxlength="30" style="width:180px;">
+            <button class="mb-btn" onclick="submitAddPcat()">保存</button>
+            <button class="mb-btn mb-btn-ghost" onclick="toggleAddPcat()">取消</button>
+        </div>
+    </div>
+    </div><!-- /#uploadArea -->
+
+    <div class="mb-tip">
+        共 <b>{{ total }}</b> 本私有资料。私有资料 <b>仅你自己与管理员可见</b>；挂在「我的分类」下的资料只在<b>本页</b>显示，挂在全局分类下的资料在公共资料库对应分类里也能被你自己看到。
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40%;text-align:left">资料名称</th>
+                    <th style="width:15%">一级分类</th>
+                    <th style="width:15%">二级分类</th>
+                    <th class="td-center" style="width:12%">归属</th>
+                    <th class="td-center" style="width:18%">操作</th>
+                </tr>
+            </thead>
+            <tbody id="bookBody">
+                {% for b in books %}
+                {# 能否浏览器内预览：优先 file_ext 字段，为空则回退从存储路径取扩展名（file_ext 大多为 NULL） #}
+                {% set rawpath = (b.savepath or b.path or '') %}
+                {% set extparts = rawpath.split('.') %}
+                {% set fext = (b.file_ext or (extparts|last if extparts|length > 1 else '')) %}
+                {% set fext = (fext|lower).replace('.', '') %}
+                {% set canprev = fext in ['pdf','txt','jpg','jpeg','png','gif','bmp','csv','log'] %}
+                <tr data-id="{{ b.id }}" data-owner="{% if b.pc1 %}private{% else %}global{% endif %}" data-c1="{{ b.pc1 or b.cat1 }}" data-c2="{{ b.pc2 or b.cat2 }}" data-name="{{ b.name }}">
+                    <td class="name-cell">
+                        <span class="file-icon">📄</span>
+                        <span class="lock-badge">🔒</span>
+                        <a href="{% if canprev %}/book/view/{{ b.id }}{% else %}/book/detail/{{ b.id }}?from=private{% endif %}"
+                           {% if canprev %}target="_blank" rel="noopener"{% endif %}
+                           title="{% if canprev %}点击预览：{% else %}浏览器无法直接预览，点击查看详情：{% endif %}{{ b.name }}"><span class="name-text">{{ b.name }}</span></a>
+                    </td>
+                    <td class="td-center">{{ b.pc1 or b.cat1 }}</td>
+                    <td class="td-center">{{ b.pc2 or b.cat2 }}</td>
+                    <td class="td-center">{% if b.pc1 %}<span class="src-tag">我的分类</span>{% else %}<span class="src-tag">全局分类</span>{% endif %}</td>
+                    <td class="td-center">
+                        <div class="action-btns">
+                            <button onclick="location.href='/book/detail/{{ b.id }}?from=private'">详情</button>
+                            <button onclick="location.href='/book/download/{{ b.id }}'">下载</button>
+                            <button class="btn-delete" onclick="deleteBook('{{ b.id }}', '{{ b.name }}')">删除</button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr class="empty-row"><td colspan="5">你还没有私有资料。在上方「上传私有资料」区拖拽或选择文件即可（上传后自动成为私有）。</td></tr>
+                {% endfor %}
+                <tr class="empty-row" id="noMatchRow" style="display:none"><td colspan="5">没有符合条件的资料</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const GCAT1 = {{ gcat1|tojson|safe }};
+const GCAT2 = {{ gcat2_map|tojson|safe }};
+let PCAT1 = {{ pcat1|tojson|safe }};
+let PCAT2 = {{ pcat2_map|tojson|safe }};
+
+function esc(s){ return (s||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function toggleUploadArea(){
+    const box = document.getElementById("uploadArea");
+    const btn = document.getElementById("toggleUploadBtn");
+    const show = (box.style.display === "none");
+    box.style.display = show ? "" : "none";
+    btn.textContent = show ? "⬇️ 收起上传 / 新建" : "⬆️ 上传 / 新建资料";
+}
+function postForm(url, fd){
+    return fetch(url, { method:"POST", body:fd, headers:{ "X-Requested-With":"XMLHttpRequest" } }).then(r=>r.json());
+}
+
+/* ========== 方案A：归属切换 + 一级分类筛选 + 本地搜索（只搜自己的私有资料） ========== */
+const mySearch = document.getElementById("mySearchInput");
+let curOwner = "all";
+let curC1 = "";
+
+function bookRows(){ return Array.from(document.querySelectorAll("#bookBody tr[data-id]")); }
+
+mySearch.addEventListener("input", applyFilter);
+
+function setOwner(v){
+    curOwner = v;
+    curC1 = "";
+    document.querySelectorAll(".owner-btn[data-owner]").forEach(function(b){
+        b.classList.toggle("active", b.dataset.owner === v);
+    });
+    renderC1();
+    applyFilter();
+}
+function setC1(v){
+    curC1 = (curC1 === v) ? "" : v;   /* 再点一次取消选中 */
+    renderC1();
+    applyFilter();
+}
+function renderC1(){
+    const box = document.getElementById("c1Chips");
+    const seen = [];
+    bookRows().forEach(function(r){
+        if(curOwner !== "all" && r.dataset.owner !== curOwner) return;
+        const c = r.dataset.c1 || "";
+        if(c && seen.indexOf(c) === -1) seen.push(c);
+    });
+    box.innerHTML = "";
+    if(!seen.length){ box.innerHTML = '<span class="f-empty">暂无分类</span>'; return; }
+    seen.forEach(function(c){
+        const b = document.createElement("button");
+        b.className = "f-btn" + (curC1 === c ? " active" : "");
+        b.textContent = c;
+        b.onclick = function(){ setC1(c); };
+        box.appendChild(b);
+    });
+}
+function applyFilter(){
+    const kw = mySearch.value.trim().toLowerCase();
+    const rows = bookRows();
+    let shown = 0;
+    rows.forEach(function(r){
+        let ok = true;
+        if(curOwner !== "all" && r.dataset.owner !== curOwner) ok = false;
+        if(ok && curC1 && (r.dataset.c1 || "") !== curC1) ok = false;
+        if(ok && kw){
+            const hay = ((r.dataset.name||"") + " " + (r.dataset.c1||"") + " " + (r.dataset.c2||"")).toLowerCase();
+            if(hay.indexOf(kw) === -1) ok = false;
+        }
+        r.style.display = ok ? "" : "none";
+        if(ok) shown++;
+    });
+    document.getElementById("noMatchRow").style.display = (rows.length && !shown) ? "" : "none";
+    document.getElementById("filterCount").textContent = rows.length ? ("显示 " + shown + " / " + rows.length + " 本") : "";
+}
+
+/* ========== 删除书籍 ========== */
+function deleteBook(id, name){
+    if(!confirm("确定删除「" + name + "」吗？\n\n删除后不可恢复，关联的分类标签也会被清除。")) return;
+    const fd = new FormData();
+    fd.append("id", id);
+    postForm("/book/api/delete", fd).then(function(res){
+        alert(res.msg || (res.code === 200 ? "删除成功" : "删除失败"));
+        if(res.code === 200) location.reload();
+    }).catch(function(e){ alert("删除失败：" + e.message); });
+}
+
+/* ---------- 全局分类联动 ---------- */
+function renderG1(){
+    const s = document.getElementById("selG1");
+    s.innerHTML = "";
+    if(!GCAT1.length){ s.innerHTML = '<option value="">（暂无全局分类）</option>'; renderG2(); return; }
+    GCAT1.forEach(c => { const o=document.createElement("option"); o.value=c.name; o.textContent=c.name; s.appendChild(o); });
+    renderG2();
+}
+function renderG2(){
+    const s = document.getElementById("selG2");
+    const p = document.getElementById("selG1").value;
+    s.innerHTML = "";
+    (GCAT2[p]||[]).forEach(n => { const o=document.createElement("option"); o.value=n; o.textContent=n; s.appendChild(o); });
+    if(!s.options.length){ const o=document.createElement("option"); o.value="未分类"; o.textContent="未分类"; s.appendChild(o); }
+}
+
+/* ---------- 个人分类联动 ---------- */
+function renderP1(){
+    const s = document.getElementById("selP1");
+    s.innerHTML = "";
+    if(!PCAT1.length){ s.innerHTML = '<option value="">（暂无个人分类）</option>'; renderP2(); return; }
+    PCAT1.forEach(c => { const o=document.createElement("option"); o.value=c.id; o.textContent=c.name; s.appendChild(o); });
+    renderP2();
+}
+function renderP2(){
+    const s = document.getElementById("selP2");
+    const pid = document.getElementById("selP1").value;
+    s.innerHTML = "";
+    (PCAT2[pid]||[]).forEach(c => { const o=document.createElement("option"); o.value=c.name; o.textContent=c.name; s.appendChild(o); });
+    if(!s.options.length){ const o=document.createElement("option"); o.value=""; o.textContent="（无二级）"; s.appendChild(o); }
+}
+
+function onScopeChange(){
+    const v = document.getElementById("selScope").value;
+    document.getElementById("wrapGlobal").style.display = (v === "global") ? "" : "none";
+    document.getElementById("wrapPrivate").style.display = (v === "private") ? "" : "none";
+    const tip = document.getElementById("scopeTip");
+    if(v === "global"){
+        tip.textContent = "本人在公共资料库对应分类下也能看到";
+    }else{
+        tip.textContent = PCAT1.length ? "只在本页显示，不进公共资料库" : "请先在下方「我的分类」新建分类";
+    }
+}
+
+/* ---------- 我的分类：渲染 / 新建 / 删除 ---------- */
+function renderPcatList(){
+    const box = document.getElementById("pcatList");
+    box.innerHTML = "";
+    if(!PCAT1.length){
+        box.innerHTML = '<span class="pcat-empty">还没有个人分类，点右上角「+ 新建分类」创建。</span>';
+        return;
+    }
+    PCAT1.forEach(c => {
+        const chip = document.createElement("span");
+        chip.className = "pcat-chip";
+        chip.innerHTML = esc(c.name) + '<span class="del" title="删除（含其下二级）" onclick="delPcat(\'' + c.id + '\',\'' + esc(c.name) + '\')">×</span>';
+        box.appendChild(chip);
+        (PCAT2[c.id]||[]).forEach(sub => {
+            const s = document.createElement("span");
+            s.className = "pcat-chip is-sub";
+            s.innerHTML = esc(sub.name) + '<span class="del" title="删除" onclick="delPcat(\'' + sub.id + '\',\'' + esc(sub.name) + '\')">×</span>';
+            box.appendChild(s);
+        });
+    });
+}
+
+function toggleAddPcat(){
+    const row = document.getElementById("addPcatRow");
+    row.style.display = (row.style.display === "none") ? "" : "none";
+    if(row.style.display !== "none"){
+        const ps = document.getElementById("selParent");
+        ps.innerHTML = "";
+        PCAT1.forEach(c => { const o=document.createElement("option"); o.value=c.id; o.textContent=c.name; ps.appendChild(o); });
+        toggleParentSel();
+        document.getElementById("pcatName").value = "";
+    }
+}
+function toggleParentSel(){
+    const lv = document.querySelector('input[name="pcatLevel"]:checked').value;
+    document.getElementById("selParent").disabled = (lv !== "2");
+}
+function submitAddPcat(){
+    const lv = document.querySelector('input[name="pcatLevel"]:checked').value;
+    const name = document.getElementById("pcatName").value.trim();
+    if(!name){ alert("请输入分类名称"); return; }
+    const fd = new FormData();
+    fd.append("name", name);
+    if(lv === "2"){
+        const pid = document.getElementById("selParent").value;
+        if(!pid){ alert("请先创建一级分类"); return; }
+        fd.append("parent_id", pid);
+    }
+    postForm("/book/api/pcat/add", fd).then(res => {
+        alert(res.msg);
+        if(res.code === 200) location.reload();
+    }).catch(e => alert("保存失败：" + e.message));
+}
+function delPcat(id, name){
+    if(!confirm('删除分类「' + name + '」？（其下二级分类一并删除；已上传的资料不会删除）')) return;
+    const fd = new FormData(); fd.append("id", id);
+    postForm("/book/api/pcat/delete", fd).then(res => {
+        alert(res.msg);
+        if(res.code === 200) location.reload();
+    }).catch(e => alert("删除失败：" + e.message));
+}
+
+/* ---------- 上传 ---------- */
+function doUpload(files){
+    if(!files || !files.length) return;
+    const scope = document.getElementById("selScope").value;
+    if(scope === "private" && !PCAT1.length){ alert("请先在「我的分类」中新建分类"); return; }
+    const fd = new FormData();
+    for(const f of files) fd.append("files", f);
+    fd.append("scope", scope);
+    if(scope === "global"){
+        fd.append("cat1", document.getElementById("selG1").value);
+        fd.append("cat2", document.getElementById("selG2").value);
+    }else{
+        const p1 = document.getElementById("selP1");
+        const p1name = p1.options[p1.selectedIndex] ? p1.options[p1.selectedIndex].text : "";
+        fd.append("pc1", p1name);
+        fd.append("pc2", document.getElementById("selP2").value);
+    }
+    const list = document.getElementById("uploadList");
+    list.innerHTML = "";
+    for(const f of files){
+        const d = document.createElement("div");
+        d.className = "upload-item";
+        d.textContent = "上传中：" + f.name;
+        list.appendChild(d);
+    }
+    postForm("/book/api/private/upload", fd).then(res => {
+        alert(res.msg + ((res.data && res.data.msgs && res.data.msgs.length) ? "\n" + res.data.msgs.join("\n") : ""));
+        if(res.code === 200) location.reload();
+        else list.innerHTML = "";
+    }).catch(e => { alert("上传失败：" + e.message); list.innerHTML = ""; });
+}
+
+(function init(){
+    renderG1();
+    renderP1();
+    renderPcatList();
+    onScopeChange();
+    renderC1();
+    applyFilter();
+    const dz = document.getElementById("dropZone");
+    const fi = document.getElementById("fileInput");
+    dz.addEventListener("click", e => { if(e.target !== fi) fi.click(); });
+    fi.addEventListener("change", e => { if(e.target.files.length) { doUpload(e.target.files); fi.value = ""; } });
+    ["dragenter","dragover","dragleave","drop"].forEach(en => dz.addEventListener(en, e => { e.preventDefault(); e.stopPropagation(); }, false));
+    dz.addEventListener("dragenter", () => dz.classList.add("drag-over"));
+    dz.addEventListener("dragleave", () => dz.classList.remove("drag-over"));
+    dz.addEventListener("drop", e => { dz.classList.remove("drag-over"); if(e.dataTransfer.files.length) doUpload(e.dataTransfer.files); });
+})();
+</script>
+{% endblock %}

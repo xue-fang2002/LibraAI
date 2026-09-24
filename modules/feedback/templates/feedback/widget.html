@@ -1,0 +1,8 @@
+{# 反馈模块全局资源片段。仅登录用户加载。
+   注意：原「全局悬浮提交按钮 + 弹窗」已按需求移除；此处仅用于加载反馈模块的
+   CSS 与管理员导航角标脚本（角标由 feedback.js 注入到侧栏反馈中心链接）。 #}
+{% if current_user %}
+<link rel="stylesheet" href="{{ url_for('static', filename='feedback/style.css') }}">
+
+<script src="{{ url_for('static', filename='feedback/feedback.js') }}" defer></script>
+{% endif %}

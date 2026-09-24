@@ -1,0 +1,90 @@
+# ============================================================
+# xianmufile 依赖清单
+# ------------------------------------------------------------
+# 版本说明：均取「本项目实际跑通的版本」作为下限，用 >= 保留升级空间。
+# 安装：pip install -r requirements.txt
+#
+# 注意：requirements 文件不允许行尾注释（PEP 508），所以说明一律单独成行。
+# AI 相关依赖体积很大（torch 数百 MB ~ 数 GB），不装也能正常启动，
+# 只是 AI 中心会降级到 OFF/LIGHT 模式。
+# ============================================================
+
+
+# ---------- 核心（必装）----------
+Flask>=3.0.0
+Werkzeug>=3.0.0
+PyYAML>=6.0
+requests>=2.31
+numpy>=1.24
+# 跨域支持（按需）
+Flask-Cors>=4.0.0
+
+# ---------- 文档 / 表格 ----------
+# Excel 读写（.xlsx）
+openpyxl>=3.1
+# Word（.docx）
+python-docx>=1.1
+# PPT（.pptx）
+python-pptx>=0.6
+# 旧版 Excel（.xls）读取
+xlrd>=2.0
+
+# ---------- PDF ----------
+# PDF 合并 / 拆分 / 转图 / 提取文字 全部依赖 PyMuPDF（import fitz）
+PyMuPDF>=1.23
+# AI 索引读 PDF 走 pypdf；老环境可能只有 PyPDF2，两者都列以兼容
+pypdf>=4.0
+PyPDF2>=3.0
+
+# ---------- 图片 ----------
+# 图片压缩 / 转换 / 水印 / 缩略图
+Pillow>=10.0
+# 二维码生成与识别（用 OpenCV，不依赖 qrcode 库）
+opencv-python>=4.8
+
+# ---------- 图表 ----------
+# AI 图表：spec -> PNG（服务端渲染，Agg 后端）
+matplotlib>=3.7
+# Excel/CSV 解析
+pandas>=2.0
+
+# ---------- Windows Office 自动化 ----------
+# 仅这三项用到：Word/Excel/PPT 转 PDF、Excel 单元格替换、删除分表。
+# 代码调的是 COM 接口（Excel.Application / Word.Application / PowerPoint.Application），
+# 机器上装 Microsoft Office 或 WPS 均可响应；Linux 下无解，需换 LibreOffice 方案。
+pywin32>=306; sys_platform == "win32"
+
+# ---------- OCR（可选）----------
+# 除本包外还需单独安装 Tesseract 引擎本体：
+#   Windows: https://github.com/UB-Mannheim/tesseract/wiki
+#   引擎不在 PATH 时，用环境变量 TESSERACT_CMD 指定 exe 路径
+pytesseract>=0.3.10
+
+# ---------- 工具箱轻量扩展（2026-09-19） ----------
+# 简繁互转（text_zhconv 工具）；纯 Python 单文件，缺了只影响该工具（其余工具不受影响）
+zhconv>=1.4
+# 汉字转拼音（text_pinyin 工具）
+pypinyin>=0.50
+# 八字排盘（AI 员工「人力参谋」calc_bazi 工具）；纯 Python 零依赖，缺了只影响该员工
+lunar_python>=1.4
+# PDF 表格提取（document_pdf_to_excel 工具）；缺了该工具返回 503 安装提示
+pdfplumber>=0.10
+
+
+# ============================================================
+# 以下为可选依赖 —— 不装也能启动，对应功能自动隐藏或给出友好提示
+# ============================================================
+
+# 去背景（需额外下载 u2net 模型，体积较大）
+# rembg>=2.0
+
+# 本地 GGUF 推理（llama_cpp 后端）
+llama-cpp-python>=0.2.70
+# 向量检索：bge embeddings + faiss 索引
+sentence-transformers>=2.2
+faiss-cpu>=1.7
+# transformers 后端
+transformers>=4.35
+torch>=2.0
+# 阿里云百炼（dashscope 后端）
+dashscope>=1.20

@@ -1,0 +1,259 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}📄 文档处理 - 工具箱{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox_hub/hub.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="hub-page">
+  <a class="hub-back" href="{{ url_for('toolbox_hub.index') }}">‹ 返回工具箱</a>
+
+  <div class="hub-hero">
+    <h1 class="hub-hero-title">📄 文档处理</h1>
+    <p class="hub-hero-sub">PDF / Word / PPT / Excel 的合并、拆分、转换、替换、模板填充等工具集中在此。点击具体工具即可开始处理。</p>
+  </div>
+
+  <div class="hub-section-title">PDF 工具</div>
+  <div class="hub-tiles">
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_merge">
+      <span class="hub-tile-icon">📎</span>
+      <span class="hub-tile-name">PDF 合并</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_split">
+      <span class="hub-tile-icon">✂️</span>
+      <span class="hub-tile-name">PDF 拆分</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_to_image">
+      <span class="hub-tile-icon">🖼️</span>
+      <span class="hub-tile-name">PDF 转图片</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_extract_text">
+      <span class="hub-tile-icon">📝</span>
+      <span class="hub-tile-name">提取文字</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_extract_image">
+      <span class="hub-tile-icon">🖻</span>
+      <span class="hub-tile-name">提取图片</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_rotate">
+      <span class="hub-tile-icon">🔄</span>
+      <span class="hub-tile-name">页面旋转</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_watermark">
+      <span class="hub-tile-icon">💧</span>
+      <span class="hub-tile-name">PDF 水印</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_compress">
+      <span class="hub-tile-icon">🗜️</span>
+      <span class="hub-tile-name">PDF 压缩</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_pagenumber">
+      <span class="hub-tile-icon">🔢</span>
+      <span class="hub-tile-name">PDF 加页码</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_encrypt">
+      <span class="hub-tile-icon">🔐</span>
+      <span class="hub-tile-name">PDF 加密/解密</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_to_word">
+      <span class="hub-tile-icon">📄</span>
+      <span class="hub-tile-name">PDF 转 Word</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_pages">
+      <span class="hub-tile-icon">📐</span>
+      <span class="hub-tile-name">页面管理</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_meta">
+      <span class="hub-tile-icon">🏷️</span>
+      <span class="hub-tile-name">元数据</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_to_excel">
+      <span class="hub-tile-icon">📊</span>
+      <span class="hub-tile-name">PDF 转 Excel</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_grayscale">
+      <span class="hub-tile-icon">⚫</span>
+      <span class="hub-tile-name">PDF 转灰度</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_to_imagepdf">
+      <span class="hub-tile-icon">🖼️</span>
+      <span class="hub-tile-name">PDF 转纯图</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_pdf_stamp">
+      <span class="hub-tile-icon">🔖</span>
+      <span class="hub-tile-name">PDF 签章/插图</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+  </div>
+
+  <div class="hub-section-title">Word 工具</div>
+  <div class="hub-tiles">
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_word_tools">
+      <span class="hub-tile-icon">📘</span>
+      <span class="hub-tile-name">Word 批量处理</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_word_template">
+      <span class="hub-tile-icon">🧾</span>
+      <span class="hub-tile-name">Word 模板填充</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+  </div>
+
+  <div class="hub-section-title">PPT 工具</div>
+  <div class="hub-tiles">
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_ppt_tools">
+      <span class="hub-tile-icon">📙</span>
+      <span class="hub-tile-name">PPT 提取/转换</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_ppt_replace">
+      <span class="hub-tile-icon">🔁</span>
+      <span class="hub-tile-name">PPT 批量替换</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_ppt_merge">
+      <span class="hub-tile-icon">📑</span>
+      <span class="hub-tile-name">PPT 合并</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_ppt_template">
+      <span class="hub-tile-icon">🎨</span>
+      <span class="hub-tile-name">PPT 模板生成</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+  </div>
+
+  <div class="hub-section-title">Excel 工具</div>
+  <div class="hub-tiles">
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_merge">
+      <span class="hub-tile-icon">🧩</span>
+      <span class="hub-tile-name">Excel 合并</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_split">
+      <span class="hub-tile-icon">✂️</span>
+      <span class="hub-tile-name">Excel 拆分</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_convert">
+      <span class="hub-tile-icon">🔄</span>
+      <span class="hub-tile-name">Excel 格式转换</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_clean">
+      <span class="hub-tile-icon">🧹</span>
+      <span class="hub-tile-name">Excel 数据清洗</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_columns">
+      <span class="hub-tile-icon">🗂️</span>
+      <span class="hub-tile-name">Excel 提取/删除列</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_stats">
+      <span class="hub-tile-icon">📊</span>
+      <span class="hub-tile-name">Excel 汇总统计</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_replace">
+      <span class="hub-tile-icon">🔁</span>
+      <span class="hub-tile-name">Excel 批量替换</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_match">
+      <span class="hub-tile-icon">🔗</span>
+      <span class="hub-tile-name">两表匹配</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_compare">
+      <span class="hub-tile-icon">🔍</span>
+      <span class="hub-tile-name">名单比对</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_mask">
+      <span class="hub-tile-icon">🕶️</span>
+      <span class="hub-tile-name">数据脱敏</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_splitcol">
+      <span class="hub-tile-icon">↔️</span>
+      <span class="hub-tile-name">拆列/合列</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_excel_images">
+      <span class="hub-tile-icon">🖼️</span>
+      <span class="hub-tile-name">Excel 提取图片</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+  </div>
+
+  <div class="hub-section-title">格式转换</div>
+  <div class="hub-tiles">
+
+    <a class="hub-tile" href="{{ url_for('toolbox.index') }}?hub=1&back=/tools/document#/document/document_convert">
+      <span class="hub-tile-icon">🔄</span>
+      <span class="hub-tile-name">万能格式转换</span>
+      <span class="hub-badge ok">可用</span>
+    </a>
+
+  </div>
+</div>
+{% endblock %}

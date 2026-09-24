@@ -1,0 +1,46 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}🔧 在线工具{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox/workspace.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox/ai_assistant.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="toolbox-page" id="toolbox-app">
+  <!-- 一级分类 Tab 栏 -->
+  <div class="tb-category-bar" id="category-bar">
+    <!-- JS 动态渲染 -->
+  </div>
+
+  <!-- 二级分类 Pill 栏 -->
+  <div class="tb-sub-bar" id="sub-bar">
+    <!-- JS 动态渲染 -->
+  </div>
+
+  <!-- 内容区 -->
+  <div class="tb-content-wrapper" id="content-area">
+    <!-- JS 动态渲染工具面板 -->
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- 配置文件（说明文本在此） -->
+<script src="{{ url_for('static', filename='toolbox/tools-config.js') }}"></script>
+<!-- 组件 -->
+<script src="{{ url_for('static', filename='toolbox/components/upload-zone.js') }}"></script>
+<script src="{{ url_for('static', filename='toolbox/components/file-list.js') }}"></script>
+<script src="{{ url_for('static', filename='toolbox/components/progress-bar.js') }}"></script>
+<script src="{{ url_for('static', filename='toolbox/components/result-panel.js') }}"></script>
+<!-- 工作区（持久文件池） -->
+<script src="{{ url_for('static', filename='toolbox/workspace.js') }}"></script>
+<!-- AI 工具助手 -->
+<script src="{{ url_for('static', filename='toolbox/ai_assistant.js') }}"></script>
+<!-- 纯前端计算工具面板（计算换算分类） -->
+<script src="{{ url_for('static', filename='toolbox/calc-tools.js') }}"></script>
+<!-- 核心逻辑 -->
+<script src="{{ url_for('static', filename='toolbox/app.js') }}"></script>
+{% endblock %}

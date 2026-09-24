@@ -1,0 +1,46 @@
+{# ========== 统一登录用户菜单：按 menu_id 区分两套内容 ==========
+   调用方式：
+     侧边栏（全局）：  {% with menu_id='userMenuSidebar' %}{% include '_user_menu.html' %}{% endwith %}
+     图书馆页右上角：  {% with menu_id='userMenuBookLib' %}{% include '_user_bar.html' %}{% endwith %}
+     （_user_bar.html 内部会 include 本文件）
+   注意：菜单项一律用 .user-menu-item 独立类选择器 —— 菜单会被 JS portal 到 <body> 下，
+   不能依赖 .bm-ws / .header-user 等祖先选择器（portal 后全部失效）。 #}
+<div class="user-menu" id="{{ menu_id or 'userMenuSidebar' }}">
+    {% if current_user %}
+        {% if menu_id == 'userMenuBookLib' %}
+            {# ---- 图书馆页右上角头像菜单：只放图书馆内部入口 ---- #}
+            <a class="user-menu-item" href="{{ url_for('book_lib.my_reading') }}">
+                <span>📖</span><span>我的阅读</span>
+            </a>
+        {% else %}
+            {# ---- 侧边栏头像菜单（全局）：个人设置 + 管理后台 + 退出 ---- #}
+            <div class="user-menu-item" onclick="openChangePwd()">
+                <span>🔑</span><span>修改密码</span>
+            </div>
+         
+            <div class="user-menu-item" onclick="openChangeName()">
+                <span>✏️</span><span>修改名字</span>
+            </div>
+           
+            {% if is_admin|default(false) %}
+                
+                <a class="user-menu-item" href="{{ url_for('config_center.users_page') }}">
+                    <span>👤</span><span>用户管理</span>
+                </a>
+                
+                <a class="user-menu-item" href="{{ url_for('config_center.logs_page') }}">
+                    <span>📋</span><span>操作日志</span>
+                </a>
+                
+            {% endif %}
+            
+            <a class="user-menu-item" href="{{ url_for('logout_view') }}" style="color:#e74c3c;">
+                <span>🚪</span><span>退出登录</span>
+            </a>
+        {% endif %}
+    {% else %}
+        <a class="user-menu-item" href="{{ url_for('login_view', next=request.path) }}">
+            <span>🔐</span><span>登录</span>
+        </a>
+    {% endif %}
+</div>

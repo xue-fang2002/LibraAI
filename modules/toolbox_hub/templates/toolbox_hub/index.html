@@ -1,0 +1,44 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}🧰 工具箱{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='toolbox_hub/hub.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="hub-page">
+  <div class="hub-hero">
+    <h1 class="hub-hero-title">🧰 工具箱</h1>
+    <p class="hub-hero-sub">{{ zone_count }} 大功能区统一入口：数据可视化、文档处理、办公自动化、图片处理、文本处理、识别与系统工具，覆盖日常办公全流程。</p>
+  </div>
+
+  <div class="hub-grid">
+    {% for z in zones %}
+    <a class="hub-card" href="{{ z.url }}">
+      <div class="hub-card-icon">{{ z.icon }}</div>
+      <div class="hub-card-body">
+        <div class="hub-card-title">{{ z.title }}</div>
+        <div class="hub-card-desc">{{ z.desc }}</div>
+        {% if z.badges %}
+        <div class="hub-card-meta">
+          {% for b in z.badges %}
+          <span class="hub-badge{% if b.kind %} {{ b.kind }}{% endif %}">{{ b.text }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="hub-card-arrow">›</div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <div class="hub-note">
+    <strong>功能介绍：</strong>数据可视化 —— 上传 Excel / CSV 一键生成柱形、折线、饼环、关系分布、统计科研等上百种图表（含 3D）；文档处理 —— PDF 合并 / 拆分 / 转换，Excel 批量建分表、单元格替换、转 PDF、对照改名；办公自动化 —— 批量创建文件夹 / 文件 / 分表、批量改名、移动复制、路径与清单导出；工作自动化流程 —— 可插拔 RPA 框架，自动登录业务系统并填报单据；效率工具 —— 图片压缩 / 转换 / 滤镜，JSON 格式化、编码转换、正则测试、时间戳、文本对比、密码与 UUID 生成，二维码生成等。
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='toolbox_hub/hub.js') }}"></script>
+{% endblock %}

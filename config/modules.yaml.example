@@ -1,0 +1,159 @@
+# ============================================================
+# 模块配置模板（modules.yaml.example）
+# ------------------------------------------------------------
+# 本文件随仓库提交，是「安全占位」版本，不含任何内网地址或密钥。
+# 运行方式（任选其一）：
+#   1. 复制为 config/modules.yaml 后填入真实值：
+#        cp config/modules.yaml.example config/modules.yaml
+#   2. 或直接用本文件：当 config/modules.yaml 不存在时，
+#      config_loader 会自动回退读取本模板，应用可直接启动。
+# 注意：config/modules.yaml 已在 .gitignore 中（含真实内网/密钥，不入库）。
+# ============================================================
+
+modules:
+  # public: 是否对普通用户（非管理员）在侧边栏可见。
+  #   新模块加这一行即可对全员开放，无需改 plugin_scan 的代码；
+  #   不写则回落到 plugin_scan.DEFAULT_PUBLIC_MODULES（兼容老配置）。
+  homepage: 
+    enabled: true
+    sort_order: 1
+    public: true
+  book_lib:
+    enabled: true
+    sort_order: 2
+    public: true
+  ai_center:
+    enabled: true
+    sort_order: 0
+    ai_mode: full
+    security_lock: false
+    backend: ollama
+    chat_thinking_mode: mixed
+    model_paths:
+      light_emb: models/bge-small-zh-v1.5
+      full_emb: models/bge-large-zh-v1.5
+      local_llm: models/qwen2.5-7b-instruct-q4_k_m.gguf
+    ollama:
+      # 填你实际运行 Ollama 的地址；本地部署用 localhost 即可
+      url: http://localhost:11434
+      model: qwen2.5-7b-instruct:latest
+    dashscope:
+      # 阿里云百炼兼容接口地址（真实地址，非密钥）
+      url: https://dashscope.aliyuncs.com/compatible-mode/v1
+      model: qwen-plus
+      # 真实 API Key 请通过配置中心界面填写，不要写进本文件
+      api_key: ""
+      enable_thinking: false
+    transformers:
+      model_path: models/
+    llama_cpp:
+      model_path: models/qwen2.5-7b-instruct-q4_k_m.gguf
+    qa_mode:
+      default: general
+      ocr_max_pages:
+        public: 12
+        general: 12
+        precise: 0
+      min_score:
+        public: 0.3
+        general: 0.4
+        precise: 0.45
+      by_category:
+        文件资料/制度文件: precise   # 精确模式
+        文件资料/其他文件: general   # 普通模式
+  chart:
+    enabled: true
+    sort_order: 4
+    public: true
+  toolbox_hub:
+    enabled: true
+    sort_order: 4
+    public: true
+  workflow:
+    enabled: true
+    sort_order: 5
+    public: false
+    # zones: 工具箱首页的功能区卡片（可选）。
+    #   不写则使用代码里的默认 8 个分区（modules/toolbox_hub/zones.py DEFAULT_ZONES）。
+    #   写在这里即可增删改分区，**不必改 index.html**。
+    #   url 两种写法：
+    #     "endpoint:chart.index?hub=1"  → 经 url_for 解析（推荐，路由改名也不坏链）
+    #     "/toolbox?hub=1#/image"       → 原样使用（带 hash 的只能这样写）
+    #   badges 的 kind 决定样式：ok=绿 / todo=橙 / 省略=普通
+    # 新增第 9 个区示例（去掉注释即可生效）：
+    # zones:
+    #   - icon: "🎬"
+    #     title: "视频处理"
+    #     desc: "批量转码、截取封面、压制体积。"
+    #     badges: [{text: "新上线", kind: "ok"}]
+    #     url: "/toolbox?hub=1#/video"
+  config_center:
+    enabled: true
+    sort_order: 99
+  experience_hub:
+    enabled: true
+    sort_order: 3
+    public: true
+  office_tools:
+    enabled: true
+    sort_order: 5
+    public: true
+  toolbox:
+    enabled: true
+    sort_order: 6
+    public: true
+  nav_hub:
+    enabled: true
+    sort_order: 7
+    public: true
+  # AI 任务中心：自然语言下达任务，AI 选能力并生成执行计划
+  ai_agent:
+    enabled: true
+    sort_order: 9
+    public: true
+  # AI 员工：卡片墙 + 每位员工一个对话页
+  # public: true → 侧栏对所有人显示；具体哪位员工能用，由员工自己的 min_role 把关
+  # access_level: login → 需登录；改成 admin 可收紧到仅管理员
+  # allow_free_sql: true 才允许模型执行只读 SELECT（强制 LIMIT/超时，且仅管理员）
+  # staffs 省略时回落到模块内置花名册；新增员工只需在下面加一条：
+  #   - id: ops2
+  #     icon: "🧑‍🔧"
+  #     name: "值班助手"
+  #     role: "值班 / 巡检"
+  #     desc: "..."
+  #     badges: [{text: "可用", kind: "ok"}]
+  #     tools: []            # 留空 = 放行全部只读工具
+  #     min_role: admin      # 留空 = 所有登录用户可用；admin = 仅管理员
+  #     samples: ["今天有哪些报错？"]
+  #     enabled: true
+  # 全体可用员工的写法（只给受限的专用工具，不碰代码 / 日志 / 自由查库）：
+  #   - id: help
+  #     icon: "💬"
+  #     name: "AI客服"
+  #     tools: ["site_map", "tool_usage", "book_search"]
+  #     min_role: ""
+  #
+  # 带输入面板的员工（form）：页面顶部会渲染一张表单，提交后后端先用
+  # auto_tool 算好结果再交给模型解读，数据不落库。示例：
+  #   - id: hr2
+  #     icon: "🧭"
+  #     name: "岗位顾问"
+  #     role: "岗位匹配"
+  #     desc: "..."
+  #     tools: ["calc_bazi"]     # 白名单：命理类员工不给代码/数据库权限
+  #     form:
+  #       title: "出生信息"
+  #       hint: "只为这一次排盘使用，不写入数据库"
+  #       submit: "排盘并分析"
+  #       auto_tool: calc_bazi
+  #       fields:
+  #         - {key: name,  label: "姓名 / 昵称", type: text,   required: false}
+  #         - {key: birth, label: "出生日期",    type: date,   required: true}
+  #         - {key: hour,  label: "出生时辰",    type: select, options: ["未知","子","丑"]}
+  #         - {key: city,  label: "出生地",      type: text,   suggest_from: cities}
+  ai_staff:
+    enabled: true
+    sort_order: 8
+    public: true
+    access_level: login
+    allow_free_sql: true

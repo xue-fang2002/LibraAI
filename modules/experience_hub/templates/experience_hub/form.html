@@ -1,0 +1,244 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}{% if is_edit %}编辑经验{% else %}发布新经验{% endif %}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='experience_hub/style.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="paper-card form-card">
+        <h2>{% if is_edit %}✏️ 编辑你的经验{% else %}✍️ 写下你的经验{% endif %}</h2>
+        <form id="postForm">
+            <div class="form-group">
+                <label>标题</label>
+                <input type="text" id="title" class="clay-input" placeholder="给这个经验起个吸引人的名字..." value="{{ post.title if post else '' }}" required>
+            </div>
+            <div class="form-group">
+                <label>分类</label>
+                <div class="clay-toggle-group">
+                    {% for cat in ['技术', '设计', '产品', '职场'] %}
+                    <button type="button" class="toggle-btn {% if post and post.category == cat %}active{% endif %}" data-val="{{ cat }}">{{ cat }}</button>
+                    {% endfor %}
+                    <input type="hidden" id="category" value="{{ post.category if post else '技术' }}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>正文</label>
+                <textarea id="content" class="clay-textarea" rows="10" placeholder="写下你的解题思路、踩坑记录或独门心法...">{{ post.content if post else '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label>标签 (逗号分隔)</label>
+                <input type="text" id="tags" class="clay-input" placeholder="例如：Python, 性能优化, 架构" value="{{ post.tags if post else '' }}">
+            </div>
+            <div class="form-group">
+                <label>可见性</label>
+                <div class="clay-toggle-group">
+                    <button type="button" class="toggle-btn vis-btn active" data-vis="1">🌐 公开</button>
+                    <button type="button" class="toggle-btn vis-btn" data-vis="0">🔒 私有</button>
+                    <input type="hidden" id="isPublic" value="{{ '0' if post and post.is_public == 0 else '1' }}">
+                </div>
+                <small class="vis-hint" id="visHint"></small>
+            </div>
+            <div class="form-actions">
+                <button type="button" onclick="window.history.back()" class="clay-btn-secondary">取消</button>
+                <button type="submit" class="clay-btn-primary">✨ 发布</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('postForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        // 防连点：提交进行中直接忽略后续点击，避免「卡顿后多点」产生重复经验贴
+        if (window.__expSubmitting) return;
+        window.__expSubmitting = true;
+        const submitBtn = this.querySelector('.clay-btn-primary');
+        const btnOrig = submitBtn ? submitBtn.innerText : '';
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.innerText = '发布中…'; }
+
+        try {
+            const title = document.getElementById('title').value.trim();
+            const category = document.getElementById('category').value;
+            const content = document.getElementById('content').value.trim();
+            const tags = document.getElementById('tags').value.trim();
+
+            if (!title || !content) { alert('标题和内容不能为空'); return; }
+
+            const isPublic = document.getElementById('isPublic').value === '1';
+            const payload = { title, category, content, tags, is_public: isPublic };
+            const isEdit = {{ is_edit|tojson }};
+            const postId = {{ post.id if post else 0 }};
+            const url = isEdit ? `/experience/api/${postId}/update` : '/experience/api/create';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (json.code === 200) {
+                alert(json.msg);
+                // 后端已做幂等防护，连点时这里只会拿到「已发布，请勿重复提交」并跳到已有帖
+                window.location.href = isEdit ? `/experience/${postId}` : '/experience';
+                return;
+            } else {
+                alert('发布失败：' + json.msg);
+            }
+        } catch (err) {
+            alert('网络错误，请稍后再试');
+        } finally {
+            window.__expSubmitting = false;
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = btnOrig; }
+        }
+    });
+
+    // 分类切换
+    // 注意：可见性按钮复用了同一套 .toggle-btn 样式，必须用 :not(.vis-btn) 排除，
+    // 否则点「私有」会走进这里，把 category 赋成 undefined（它没有 data-val）。
+    document.querySelectorAll('.toggle-btn:not(.vis-btn)').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.toggle-btn:not(.vis-btn)').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('category').value = this.dataset.val;
+        });
+    });
+    // 默认激活第一个
+    if (!document.querySelector('.toggle-btn:not(.vis-btn).active')) {
+        document.querySelector('.toggle-btn:not(.vis-btn)')?.classList.add('active');
+    }
+
+    // 可见性切换（公开 / 私有）
+    const VIS_HINT = {
+        '1': '🌐 所有人可见，并会出现在经验流、热门标签与 AI 问答中。',
+        '0': '🔒 只有你自己和管理员能看到；AI 问答也只有你和管理员的提问能检索到。'
+    };
+    function syncVis() {
+        const v = document.getElementById('isPublic').value;
+        document.querySelectorAll('.vis-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.vis === v);
+        });
+        const hint = document.getElementById('visHint');
+        if (hint) hint.innerText = VIS_HINT[v] || '';
+    }
+    document.querySelectorAll('.vis-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('isPublic').value = this.dataset.vis;
+            syncVis();
+        });
+    });
+    syncVis();  // 编辑态：按帖子当前可见性回填高亮与提示文案
+
+    // ===== 粘贴 Excel / Sheets / Numbers 表格（TSV）→ 表格源码 =====
+    // 仅拦截含制表符的纯文本（Excel/Sheets 复制必带 TSV）；Word/网页 HTML 表不在此列。
+    // ⚠️ 关键：Excel 复制出来的 TSV 是 RFC4180 风格的「带引号定界文本」——
+    //    只要单元格内含 换行(Alt+Enter) / 制表符 / 双引号，整个单元格就会被双引号包裹，
+    //    内部引号写成 ""。例如：通讯线敷设、接线 ⇥ "串口服务器␊安装配置" ⇥ 整体进度
+    //    若按 \n 硬切行，会把「引号内的换行」当成行结束 → 一行被劈成好几行、还残留引号。
+    //    所以必须先做带「引号状态」的解析，再拼表格。
+    // 另：横向合并的单元格（如横跨整行的标题）在 TSV 里表现为「一行只有一个非空格子」。
+    //    Markdown 语法没有 colspan，标题无法横跨整行，这类表改用 HTML 表输出
+    //    （详情页经 DOMPurify 白名单净化后渲染；marked 已实测支持裸 HTML 表与单元格内 <br>）。
+    function parseDelimited(text, delim) {
+        var rows = [], row = [], field = '', inQuote = false, i = 0, n = text.length;
+        while (i < n) {
+            var ch = text.charAt(i);
+            if (inQuote) {
+                if (ch === '"') {
+                    if (text.charAt(i + 1) === '"') { field += '"'; i += 2; continue; }  // "" → 一个字面引号
+                    inQuote = false; i++; continue;                                     // 引号段结束
+                }
+                field += ch; i++; continue;        // 引号内的 \t / \n 都是普通字符
+            }
+            if (ch === '"' && field === '') { inQuote = true; i++; continue; }
+            if (ch === delim) { row.push(field); field = ''; i++; continue; }
+            if (ch === '\r') { i++; continue; }
+            if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
+            field += ch; i++;
+        }
+        row.push(field);
+        rows.push(row);
+        // 去掉结尾换行产生的全空尾行
+        while (rows.length && rows[rows.length - 1].every(function (c) { return c.trim() === ''; })) rows.pop();
+        return rows;
+    }
+
+    // Markdown 单元格：| 需转义，单元格内的换行只能写成 <br>
+    function escMd(c) {
+        return c.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/\|/g, '\\|').replace(/\n/g, '<br>');
+    }
+    // HTML 单元格：转义 & < >，换行同样落成 <br>
+    function escHtmlCell(c) {
+        return c.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+    }
+
+    function tableSourceFromTsv(text) {
+        var grid = parseDelimited(String(text).replace(/\r\n?/g, '\n'), '\t')
+            .map(function (r) { return r.map(function (c) { return c.trim(); }); });
+        if (!grid.length) return null;
+        var cols = grid.reduce(function (m, r) { return Math.max(m, r.length); }, 0);
+        if (cols < 2 || grid.length < 2) return null;   // 不成表：交回浏览器默认粘贴
+        grid.forEach(function (r) { while (r.length < cols) r.push(''); });
+
+        // 开头连续的「一行只有一个非空格子」= 横向合并的标题行（至少留最后一行做列头）
+        var mergedRows = 0;
+        while (mergedRows < grid.length - 1 &&
+               grid[mergedRows].filter(function (c) { return c !== ''; }).length === 1) {
+            mergedRows++;
+        }
+
+        if (mergedRows === 0) {
+            var lines = ['| ' + grid[0].map(escMd).join(' | ') + ' |',
+                         '| ' + Array(cols).fill('---').join(' | ') + ' |'];
+            for (var r2 = 1; r2 < grid.length; r2++) {
+                lines.push('| ' + grid[r2].map(escMd).join(' | ') + ' |');
+            }
+            return lines.join('\n');
+        }
+
+        var parts = ['<table><thead>'];
+        for (var m2 = 0; m2 < mergedRows; m2++) {
+            var title = grid[m2].filter(function (c) { return c !== ''; })[0] || '';
+            parts.push('<tr><th colspan="' + cols + '">' + escHtmlCell(title) + '</th></tr>');
+        }
+        parts.push('<tr>' + grid[mergedRows].map(function (c) { return '<th>' + escHtmlCell(c) + '</th>'; }).join('') + '</tr>');
+        parts.push('</thead><tbody>');
+        for (var d2 = mergedRows + 1; d2 < grid.length; d2++) {
+            parts.push('<tr>' + grid[d2].map(function (c) { return '<td>' + escHtmlCell(c) + '</td>'; }).join('') + '</tr>');
+        }
+        parts.push('</tbody></table>');
+        return parts.join('');
+    }
+
+    function insertAtCursor(el, text) {
+        var s = el.selectionStart, e = el.selectionEnd;
+        el.value = el.value.slice(0, s) + text + el.value.slice(e);
+        el.selectionStart = el.selectionEnd = s + text.length;
+        el.focus();
+    }
+    var _contentEl = document.getElementById('content');
+    if (_contentEl) {
+        _contentEl.addEventListener('paste', function (e) {
+            var cd = e.clipboardData || window.clipboardData;
+            if (!cd) return;
+            var tsv = cd.getData('text/plain') || '';
+            if (tsv.indexOf('\t') === -1) return;   // 非表格，走浏览器默认粘贴
+            var src = tableSourceFromTsv(tsv);
+            if (!src) return;
+            e.preventDefault();
+            // 表格必须独占一个块：前后各留一个空行，避免与相邻文字粘连（HTML 表尤其需要）
+            var cur = _contentEl.value;
+            var s = _contentEl.selectionStart;
+            var before = (s > 0) ? (cur.charAt(s - 1) === '\n' ? '\n' : '\n\n') : '';
+            insertAtCursor(_contentEl, before + src + '\n\n');
+        });
+    }
+</script>
+{% endblock %}

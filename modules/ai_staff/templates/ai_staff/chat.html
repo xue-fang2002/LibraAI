@@ -1,0 +1,47 @@
+{% extends "layout_base.html" %}
+{% block page_title %}{{ staff.icon }} {{ staff.name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_markdown.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='ai_staff/staff.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="staff-wrap">
+  <div class="staff-head">
+    <a class="staff-back" href="{{ url_for('ai_staff.index') }}">‹ 返回员工列表</a>
+    <div class="staff-title">{{ staff.icon }} {{ staff.name }}{% if staff.role %}<span class="staff-card-role">{{ staff.role }}</span>{% endif %}</div>
+    <div class="staff-sub">{{ staff.desc }}</div>
+    <div class="staff-flags" id="staffFlags"></div>
+  </div>
+
+  <!-- 表单型员工才有：出生信息 / 待分析对象等输入面板（配置驱动，见 staffs.py） -->
+  <div class="staff-form" id="staffForm" hidden></div>
+
+  <div class="staff-chat" id="staffChat"></div>
+
+  <div class="staff-input">
+    <textarea id="staffInput" maxlength="1000"
+      placeholder="例如：{% if staff.samples %}{{ staff.samples[0] }}{% else %}你想问点什么？{% endif %}"></textarea>
+    <div class="staff-actions">
+      <span class="staff-hint" id="staffHint">Ctrl+Enter 发送</span>
+      <button type="button" class="staff-btn" id="staffStop" disabled>停止</button>
+      <button type="button" class="staff-btn primary" id="staffSend">发送</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.STAFF_ID = {{ staff.id | tojson }};
+  window.STAFF_NAME = {{ staff.name | tojson }};
+  window.STAFF_SAMPLES = {{ staff.samples | tojson }};
+  window.STAFF_FORM = {{ staff.form | tojson }};
+</script>
+<script src="{{ url_for('static', filename='vendor/ai-md/marked.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/ai-md/highlight.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/ai-md/purify.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ai_markdown.js') }}"></script>
+<script src="{{ url_for('static', filename='ai_staff/staff.js') }}"></script>
+{% endblock %}

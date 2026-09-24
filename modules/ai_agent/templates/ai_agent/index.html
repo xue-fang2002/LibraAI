@@ -1,0 +1,44 @@
+{% extends "layout_base.html" %}
+{% block page_title %}⚡ AI 任务{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='ai_agent/agent.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="agent-wrap">
+  <div class="agent-hero">
+    <div class="agent-title">⚡ AI 任务</div>
+    <div class="agent-sub">用一句话下达任务，AI 自动选择合适的能力并生成执行计划</div>
+  </div>
+
+  <!-- 输入区 -->
+  <div class="agent-input-card">
+    <textarea id="agentQuery" maxlength="500"
+      placeholder="例如：把图片压缩到 60% 质量 / 按 Excel 批量建文件夹 / 画一张各月销售额柱状图"></textarea>
+    <div class="agent-input-bar">
+      <span class="agent-hint" id="agentHint">Ctrl+Enter 生成计划</span>
+      <button type="button" class="agent-btn primary" id="agentPlanBtn">✨ 生成计划</button>
+    </div>
+  </div>
+
+  <!-- 计划卡（JS 渲染） -->
+  <div id="agentPlanArea"></div>
+
+  <!-- 执行日志：每次任务跑完，逐条列出哪些成功、哪些失败 -->
+  <div class="agent-section">
+    <div class="agent-section-head">
+      <span>执行日志</span>
+      <button type="button" class="agent-btn tiny" id="agentRefreshBtn">↻ 刷新</button>
+    </div>
+    <div id="agentLogPanel" class="agent-log-panel"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='ai_agent/components/file-picker.js') }}"></script>
+<script src="{{ url_for('static', filename='ai_agent/components/plan-card.js') }}"></script>
+<script src="{{ url_for('static', filename='ai_agent/components/log-panel.js') }}"></script>
+<script src="{{ url_for('static', filename='ai_agent/agent.js') }}"></script>
+{% endblock %}

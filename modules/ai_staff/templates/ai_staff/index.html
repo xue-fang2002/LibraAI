@@ -1,0 +1,61 @@
+{% extends "layout_base.html" %}
+{% block page_title %}🤖 AI 员工{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='ai_staff/staff.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="staff-hub">
+  <div class="staff-hero">
+    <h1 class="staff-hero-title">🤖 AI 员工</h1>
+    <p class="staff-hero-sub">
+      目前在职 {{ staff_count }} 位员工。点卡片进入对话：它们能读项目文件、检索代码、只读查库、分析运行日志，
+      每次取数都留审计，且一律只读、不动手改任何东西。
+    </p>
+  </div>
+
+  <div class="staff-grid">
+    {% for s in staffs %}
+    {% if s.enabled %}
+    <a class="staff-card" href="{{ s.url }}">
+      <div class="staff-card-icon">{{ s.icon }}</div>
+      <div class="staff-card-body">
+        <div class="staff-card-title">{{ s.name }}{% if s.role %}<span class="staff-card-role">{{ s.role }}</span>{% endif %}</div>
+        <div class="staff-card-desc">{{ s.desc }}</div>
+        {% if s.badges %}
+        <div class="staff-card-meta">
+          {% for b in s.badges %}
+          <span class="staff-badge{% if b.kind %} {{ b.kind }}{% endif %}">{{ b.text }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="staff-card-arrow">›</div>
+    </a>
+    {% else %}
+    <div class="staff-card disabled" aria-disabled="true">
+      <div class="staff-card-icon">{{ s.icon }}</div>
+      <div class="staff-card-body">
+        <div class="staff-card-title">{{ s.name }}{% if s.role %}<span class="staff-card-role">{{ s.role }}</span>{% endif %}</div>
+        <div class="staff-card-desc">{{ s.desc }}</div>
+        {% if s.badges %}
+        <div class="staff-card-meta">
+          {% for b in s.badges %}
+          <span class="staff-badge{% if b.kind %} {{ b.kind }}{% endif %}">{{ b.text }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="staff-note">
+    <strong>使用说明：</strong>提问后员工会自己决定要不要查文件 / 查代码 / 查库 / 翻日志，过程会摊开给你看（可展开查看每次取数的原始结果），
+    最终答案必须带真实证据——文件路径 + 行号，或真实的查询与日志结果；查不到就直说查不到，不会编。
+    当前为只读员工：不写文件、不改库、不执行 shell、不重启服务。
+  </div>
+</div>
+{% endblock %}

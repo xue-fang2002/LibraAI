@@ -1,0 +1,57 @@
+{% extends "layout_base.html" %}
+{% block page_title %}反馈中心{% endblock %}
+{% block content %}
+<div class="feedback-page">
+  <div class="fb-header">
+    <h2>📣 反馈中心</h2>
+    <div class="fb-actions">
+      {% if current_user and current_user.role in ('admin','superadmin') %}
+      <a href="{{ url_for('feedback.admin_page') }}" class="fb-btn">🛠 管理全部</a>
+      {% endif %}
+    </div>
+  </div>
+  <p class="fb-sub">使用过程遇到问题，或有改进想法？提交后开发者会看到并据此优化。你可在此查看自己的反馈与处理进度。</p>
+
+  {% if current_user %}
+  <div class="fb-card fb-submit-card">
+    <h3 class="fb-form-title">✍️ 提交反馈</h3>
+    <div class="fb-field">
+      <label>类型</label>
+      <select id="fbType" class="fb-select">
+        <option value="bug">🐞 问题 / Bug</option>
+        <option value="suggestion" selected>💡 改进建议</option>
+        <option value="idea">✨ 想法</option>
+      </select>
+    </div>
+    <div class="fb-field">
+      <label>关联模块</label>
+      <select id="fbModule" class="fb-select">
+        <option value="">不指定</option>
+        <option value="图书馆">图书馆</option>
+        <option value="图表工具">图表工具</option>
+        <option value="配置中心">配置中心</option>
+        <option value="AI问答">AI问答</option>
+        <option value="经验社区">经验社区</option>
+        <option value="办公工具">办公工具</option>
+        <option value="工具箱">工具箱</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <div class="fb-field">
+      <label>标题</label>
+      <input id="fbTitle" class="fb-input" maxlength="80" placeholder="一句话概括" />
+    </div>
+    <div class="fb-field">
+      <label>详细描述</label>
+      <textarea id="fbContent" class="fb-input" rows="5" placeholder="发生了什么？你期望怎样？"></textarea>
+    </div>
+    <div class="fb-modal-msg" id="fbMsg"></div>
+    <div class="fb-modal-actions">
+      <button class="fb-btn-primary" id="fbSubmit" type="button">提交</button>
+    </div>
+  </div>
+  {% endif %}
+
+  <div id="fbMyList" class="fb-list">加载中…</div>
+</div>
+{% endblock %}

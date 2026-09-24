@@ -1,0 +1,117 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}网站导航{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='nav_hub/style.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="nav-hub-container">
+  <!-- 顶部控制栏 -->
+  <div class="nav-hub-topbar">
+    <div class="nav-hub-search">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="navHubSearch" placeholder="搜索导航链接、分类..." autocomplete="off">
+    </div>
+    <div class="nav-hub-actions">
+      {% if can_manage %}
+      <a href="{{ url_for('nav_hub.manage_categories') }}" class="nav-hub-btn nav-hub-btn--ghost">
+        📂 管理分类
+      </a>
+      <button class="nav-hub-btn nav-hub-btn--primary" onclick="NavHub.openItemModal()">
+        + 添加导航
+      </button>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- 分类标签栏 -->
+  <div class="nav-hub-categories" id="navHubCategories">
+    <div class="nav-hub-loading">
+      <div class="nav-hub-spinner"></div>
+      <span>加载分类中...</span>
+    </div>
+  </div>
+
+  <!-- 内容区 -->
+  <div id="navHubContent">
+    <div class="nav-hub-loading">
+      <div class="nav-hub-spinner"></div>
+      <span>加载导航中...</span>
+    </div>
+  </div>
+</div>
+
+<!-- 添加/编辑导航弹窗 -->
+<div class="nav-hub-modal-overlay" id="navHubItemModal" onclick="NavHub.closeModalOnOverlay(event, '#navHubItemModal')">
+  <div class="nav-hub-modal" onclick="event.stopPropagation()">
+    <div class="nav-hub-modal-header">
+      <div class="nav-hub-modal-title" id="navHubItemModalTitle">➕ 添加导航</div>
+      <button class="nav-hub-modal-close" onclick="NavHub.closeModal('#navHubItemModal')">×</button>
+    </div>
+    <div class="nav-hub-modal-body">
+      <form id="navHubItemForm">
+        <div class="nav-hub-form-row">
+          <label class="nav-hub-form-label">名称 *</label>
+          <input type="text" name="name" class="nav-hub-form-input" placeholder="如：GitHub" required>
+        </div>
+        <div class="nav-hub-form-row--inline">
+          <div class="nav-hub-form-row">
+            <label class="nav-hub-form-label">类型 *</label>
+            <select name="type" class="nav-hub-form-select">
+              <option value="web">🌐 网址</option>
+              <option value="doc">📄 在线文档</option>
+            </select>
+          </div>
+          <div class="nav-hub-form-row">
+            <label class="nav-hub-form-label">所属分类 *</label>
+            <select name="category_id" class="nav-hub-form-select" required>
+              <option value="">-- 选择分类 --</option>
+            </select>
+          </div>
+        </div>
+        <div class="nav-hub-form-row">
+          <label class="nav-hub-form-label">链接地址 *</label>
+          <input type="text" name="url" class="nav-hub-form-input" placeholder="https://..." required>
+        </div>
+        <div class="nav-hub-form-row">
+          <label class="nav-hub-form-label">描述</label>
+          <textarea name="description" class="nav-hub-form-textarea" placeholder="简短描述该链接的用途..."></textarea>
+        </div>
+        <div class="nav-hub-form-row--inline">
+          <div class="nav-hub-form-row">
+            <label class="nav-hub-form-label">排序权重</label>
+            <input type="number" name="sort_order" class="nav-hub-form-input" value="0" style="width:120px">
+            <div class="nav-hub-form-hint">数字越小排序越靠前</div>
+          </div>
+          <div class="nav-hub-form-row" style="display:flex;align-items:flex-end;gap:8px;padding-bottom:6px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--nav-text-body);">
+              <input type="checkbox" name="is_hot" style="width:18px;height:18px;accent-color:var(--nav-primary);">
+              标记为热门
+            </label>
+          </div>
+        </div>
+        <div class="nav-hub-form-row">
+          <label class="nav-hub-form-label">标签（用空格分隔）</label>
+          <input type="text" name="tags" class="nav-hub-form-input" placeholder="如：免费 开源 推荐">
+        </div>
+      </form>
+    </div>
+    <div class="nav-hub-modal-footer">
+      <button class="nav-hub-btn nav-hub-btn--ghost" onclick="NavHub.closeModal('#navHubItemModal')">取消</button>
+      <button class="nav-hub-btn nav-hub-btn--primary" onclick="NavHub.saveItem()">💾 保存</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.NAV_HUB_CONFIG = {
+    apiBase: "{{ url_for('nav_hub.index') }}",
+    canManage: {{ 'true' if can_manage else 'false' }}
+  };
+</script>
+<script src="{{ url_for('static', filename='nav_hub/script.js') }}"></script>
+{% endblock %}

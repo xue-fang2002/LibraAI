@@ -1,0 +1,669 @@
+{% extends "layout_base.html" %}
+{% block page_title %}{{ book.name }} - 图书资料库{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/book_neu.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_markdown.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ai_qa_ui.css') }}">
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "微软雅黑", sans-serif; }
+    .bm-ws {
+        background: var(--neu-bg);
+        color: var(--neu-text);
+        min-height: 100%;
+        padding-top: 0;
+    }
+    /* 顶部导航栏（scoped，sticky 于主框架内容区） */
+    .header-top {
+        background: var(--neu-brand-deep); color: var(--neu-on-brand);
+        padding: 5px 24px; font-size: 18px; font-weight: bold;
+        display: flex; align-items: center; justify-content: space-between;
+        position: sticky; top: 0; left: 0; right: 0; z-index: 1000;
+        box-shadow: 5px 5px 10px var(--neu-brand-deep-shadow), -5px -5px 10px var(--neu-brand-deep-light);
+    }
+    .back-btn {
+        background: rgba(255,255,255,0.14); color: #fff; padding: 6px 16px;
+        text-decoration: none; border-radius: 10px; font-size: 14px; font-weight: bold;
+        border: 1px solid rgba(255,255,255,0.28);
+        display: inline-flex; align-items: center; gap: 4px;
+        transition: all 0.18s ease;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.24); color: #fff; }
+    .back-btn:active { background: rgba(255,255,255,0.30); }
+    .container { max-width: 1000px; margin: 32px auto; padding: 0 20px; }
+
+    /* 主图书卡片 */
+    /* 主图书卡片用淡蓝底，突出主内容；下方 section 保持基底，形成层次 */
+    .book-card {
+        background: var(--neu-bg-accent);
+        color: var(--neu-text);
+        border-radius: 18px;
+        padding: 32px;
+        border: 1px solid var(--neu-border);
+        box-shadow: 6px 6px 14px var(--neu-shadow-dark-2), -6px -6px 14px var(--neu-shadow-light);
+        margin-bottom: 32px;
+        animation: cardFadeUp 0.6s ease-out forwards;
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    .book-title {
+        font-size: 22px;
+        color: var(--neu-text);
+        margin-bottom: 15px;
+    }
+    .book-meta { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+    .book-meta span { font-size: 13px; color: var(--neu-text-sub); }
+    .book-meta .tag {
+        background: var(--neu-bg-accent);
+        color: var(--neu-text-sub);
+        padding: 4px 12px;
+        border-radius: 14px;
+        font-size: 12px;
+        box-shadow: inset 2px 2px 4px var(--neu-shadow-dark-2), inset -2px -2px 4px var(--neu-shadow-light);
+    }
+
+    .action-btns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+    .action-btns a, .action-btns button {
+        padding: 8px 18px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        background: var(--neu-bg);
+        color: var(--neu-text);
+        border: 1px solid var(--neu-border);
+        box-shadow: 4px 4px 9px var(--neu-shadow-dark), -4px -4px 9px var(--neu-shadow-light);
+        transition: all 0.18s ease;
+    }
+    /* 主操作按钮统一同色系凸起，把彩色让给功能分区（AI 面板保留紫色主题） */
+    .btn-preview, .btn-local, .btn-download, .btn-read { background: var(--neu-bg); }
+    .action-btns a:hover, .action-btns button:hover {
+        color: var(--neu-accent);
+        transform: translateY(-2px);
+    }
+    .action-btns a:active, .action-btns button:active {
+        transform: translateY(1px);
+        box-shadow: inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light);
+    }
+
+    .section {
+        background: var(--neu-bg);
+        color: var(--neu-text);
+        border: 1px solid var(--neu-border);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 6px 6px 14px var(--neu-shadow-dark), -6px -6px 14px var(--neu-shadow-light);
+        margin-bottom: 24px;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: cardFadeUp 0.6s ease-out forwards;
+    }
+    .section:nth-of-type(1) { animation-delay:0.2s; }
+    .section:nth-of-type(2) { animation-delay:0.3s; }
+    .section:nth-of-type(3) { animation-delay:0.4s; }
+    .section h3 {
+        color: var(--neu-accent);
+        margin-bottom: 15px;
+        font-size: 16px;
+        padding: 10px 14px;
+        background: var(--neu-bg);
+        border-radius: 12px;
+        box-shadow: inset 2px 2px 5px var(--neu-shadow-dark), inset -2px -2px 5px var(--neu-shadow-light);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .reading-status { display: flex; gap: 15px; align-items: center; margin-bottom: 15px; }
+    .reading-status select, .form-box textarea {
+        padding: 6px 12px;
+        border: 1px solid var(--neu-border);
+        border-radius: 10px;
+        background: var(--neu-bg);
+        color: var(--neu-text);
+        box-shadow: inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light);
+        transition: all 0.2s;
+    }
+    .reading-status button, .form-box button {
+        padding: 6px 14px;
+        background: var(--neu-bg);
+        color: var(--neu-text);
+        border: 1px solid var(--neu-border);
+        border-radius: 10px;
+        cursor: pointer;
+        box-shadow: 3px 3px 7px var(--neu-shadow-dark), -3px -3px 7px var(--neu-shadow-light);
+        transition: all 0.18s ease;
+    }
+    .reading-status button:hover, .form-box button:hover {
+        color: var(--neu-accent);
+        transform: translateY(-2px);
+    }
+    .reading-status button:active, .form-box button:active {
+        transform: translateY(1px);
+        box-shadow: inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light);
+    }
+
+    .form-box { margin-top: 15px; }
+    .form-box textarea {
+        width: 100%; min-height: 80px; padding: 10px;
+        font-size: 13px; resize: vertical;
+    }
+    .form-box textarea:focus, .reading-status select:focus {
+        outline: none;
+        border-color: var(--neu-accent-soft);
+    }
+    .form-box .form-row { display: flex; gap: 10px; align-items: center; margin-top: 8px; }
+    .form-box label { font-size: 13px; color: var(--neu-text-sub); }
+
+    /* 收藏按钮降噪：未收藏=与其他按钮一致的同色系凸起；已收藏=淡红底+深红字，保留语义但不刺眼 */
+    .fav-btn.is-fav {
+        background: #fbe4e4; color: #b03a3a;
+        box-shadow: inset 3px 3px 6px rgba(176, 58, 58, 0.20), inset -3px -3px 6px var(--neu-shadow-light);
+    }
+    body.dark .fav-btn.is-fav {
+        background: #3a2226; color: #eda3a3;
+        box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.35), inset -3px -3px 6px var(--neu-shadow-light);
+    }
+
+    .note-item, .review-item {
+        padding: 12px;
+        background: var(--neu-bg);
+        border-radius: 12px;
+        margin-bottom: 10px;
+        border-left: 4px solid var(--neu-accent);
+        color: var(--neu-text);
+        box-shadow: inset 2px 2px 5px var(--neu-shadow-dark), inset -2px -2px 5px var(--neu-shadow-light);
+        transition: transform 0.24s ease;
+    }
+    .note-item:hover, .review-item:hover {
+        transform: translateX(3px);
+    }
+    .note-header, .review-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 6px;
+    }
+    .note-author, .review-author { font-size: 13px; color: var(--neu-accent); font-weight: bold; }
+    .note-time, .review-time { font-size: 12px; color: var(--neu-text-sub); }
+    .note-content, .review-content { font-size: 14px; color: var(--neu-text); line-height: 1.6; }
+    .review-rating { color: #f39c12; font-size: 14px; }
+    .badge {
+        font-size: 11px; padding: 2px 6px; border-radius: 3px; margin-left: 6px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+    }
+    /* 公开/私有是语义状态色，保留不参与新拟态降噪 */
+    .badge-public { background: #d4edda; color: #155724; }
+    .badge-private { background: #f8d7da; color: #721c24; }
+    .empty-tip { text-align: center; color: var(--neu-text-sub); padding: 30px; font-size: 14px; }
+
+    /* === AI 智能助手面板专用样式 === */
+    .ai-section { border-left: 4px solid #6c5ce7; }
+    .ai-section h3 { background: linear-gradient(135deg,#ede9ff,#f3f0ff); color:#5a4fb0; }
+    .ai-tag-list { display:flex; flex-wrap:wrap; gap:8px; margin: 8px 0 12px; }
+    .ai-tag {
+        background: linear-gradient(135deg,#6c5ce7,#a29bfe); color:#fff;
+        padding: 4px 12px; border-radius: 14px; font-size: 12px;
+        box-shadow: 0 2px 4px rgba(108,92,231,0.25);
+    }
+    .ai-summary-box {
+        background: #f8f7ff; border-radius: 8px; padding: 14px;
+        font-size: 14px; color: #444; line-height: 1.75;
+        border: 1px dashed #c8b8ff; min-height: 50px;
+    }
+    .ai-similar-list { display:flex; flex-direction:column; gap:8px; }
+    .ai-similar-item {
+        display:flex; justify-content:space-between; align-items:center;
+        padding: 8px 14px; background:#f8f9fb; border-radius:6px;
+        border-left: 3px solid #a29bfe; transition: all 0.2s;
+        text-decoration:none; color:#333;
+    }
+    .ai-similar-item:hover { background:#ede9ff; transform:translateX(3px); }
+    .ai-similar-score {
+        font-size: 11px; color: #6c5ce7; font-weight: bold;
+        background: #ede9ff; padding: 2px 8px; border-radius: 10px;
+    }
+    .ai-qa-box {
+        background:#f8f7ff; border-radius:8px; padding:14px;
+        border:1px dashed #c8b8ff; min-height:60px;
+        font-size:14px; color:#444; line-height:1.7; white-space:pre-wrap;
+    }
+    .ai-loading { color:#888; font-style:italic; }
+    .ai-error { color:#c0392b; }
+    .ai-action-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .ai-action-btn {
+        padding:6px 14px; border:none; border-radius:6px; cursor:pointer;
+        font-size:13px; color:#fff;
+        background:linear-gradient(135deg,#6c5ce7,#a29bfe);
+        box-shadow:0 2px 6px rgba(108,92,231,0.25);
+        transition:all 0.2s;
+    }
+    .ai-action-btn:hover { transform:translateY(-2px); box-shadow:0 4px 10px rgba(108,92,231,0.35); }
+    .ai-action-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+    .ai-action-btn.secondary { background:linear-gradient(135deg,#7f8c8d,#95a5a6); }
+
+    @keyframes cardFadeUp {
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 768px) {
+        .container { padding: 0 10px; margin: 20px auto; }
+        .book-card { padding: 24px; box-shadow: 0 2px 8px rgba(42, 67, 101, 0.05); }
+        .book-title { font-size: 18px; }
+        .book-meta { gap: 10px; }
+        .book-meta span { font-size: 12px; }
+        .action-btns a, .action-btns button { padding: 6px 12px; font-size: 12px; transform: none !important; }
+        .section { padding: 15px; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(42, 67, 101, 0.05); }
+        .section h3 { font-size: 14px; }
+        .form-box textarea { min-height: 60px; }
+    }
+    @media (max-width: 480px) {
+        .book-meta { flex-direction: column; gap: 6px; }
+        .action-btns { flex-direction: column; }
+        .action-btns a, .action-btns button { width: 100%; text-align: center; }
+        .reading-status { flex-direction: column; align-items: flex-start; }
+        .form-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+        .note-item:hover, .review-item:hover { transform: none; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bm-ws">
+<div class="header-top">
+    <span>📚 阅读中心</span>
+    <div style="display:flex; align-items:center; gap:14px;">
+        <a href="/book" class="back-btn" id="backBtn">← 返回资料库</a>
+        <script>
+        /* 从私人图书馆进入时（?from=private），返回按钮回到「我的私有图书」而非公共资料库 */
+        (function(){
+            try{
+                var f = new URLSearchParams(location.search).get('from');
+                if(f === 'private'){
+                    var b = document.getElementById('backBtn');
+                    if(b){ b.href = '/book/my_books'; b.textContent = '← 返回我的私有图书'; }
+                }
+            }catch(e){}
+        })();
+        </script>
+        {% with menu_id='userMenuBookLib' %}
+            {% include '_user_bar.html' %}
+        {% endwith %}
+    </div>
+</div>
+<div class="container">
+    <!-- 图书基本信息 -->
+    <div class="book-card">
+        <div class="book-title">{{ book.name }}</div>
+        <div class="book-meta">
+            <span>📂 一级分类：<span class="tag">{{ book.cat1 }}</span></span>
+            <span>📁 二级分类：<span class="tag">{{ book.cat2 }}</span></span>
+            <span>📅 上传时间：{{ book.created_at or '-' }}</span>
+            <span>📊 文件大小：{{ "%.2f"|format(book.file_size/1024/1024) if book.file_size else '-' }} MB</span>
+            <span>📖 阅读人数：{{ read_count }} 人</span>
+            <span>👀 正在阅读：{{ reading_count }} 人</span>
+        </div>
+        <div class="action-btns">
+            {% set is_http = (book.path or '').lower().startswith('http') %}
+            {% if not is_http %}
+                <a class="btn-preview" href="/book/view/{{ book.id }}" target="_blank">🔍 浏览器预览</a>
+                <a class="btn-download" href="/book/download/{{ book.id }}">⬇️ 下载</a>
+            {% else %}
+                <a class="btn-preview" href="{{ book.path }}" target="_blank">🔗 访问链接</a>
+            {% endif %}
+        </div>
+    </div>
+    {% if current_user %}
+    <!-- AI 智能助手面板 -->
+    {% if ai_features.auto_summary or ai_features.similar_books or ai_features.qa %}
+    <div class="section ai-section">
+        <h3>🤖 AI 智能助手</h3>
+        {% if ai_features.auto_summary %}
+        <div style="margin-bottom:14px;">
+            <div style="font-size:13px;color:#666;font-weight:bold;margin-bottom:6px;">📖 内容摘要</div>
+            <div id="aiSummaryBox" class="ai-summary-box ai-loading">加载摘要中...</div>
+            <div id="aiTagList" class="ai-tag-list" style="display:none;"></div>
+            <div class="ai-action-row">
+                {% if is_admin %}
+                <button class="ai-action-btn secondary" onclick="regenerateSummary()" id="aiRegenBtn">🔄 重新生成摘要/标签</button>
+                {% endif %}
+                {% if ai_features.long_doc_summary %}
+                <button class="ai-action-btn secondary" onclick="loadLongSummary()" id="aiLongBtn">📚 长文档结构化总结</button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if ai_features.similar_books %}
+        <div style="margin-bottom:14px;">
+            <div style="font-size:13px;color:#666;font-weight:bold;margin-bottom:6px;">🔗 相似图书推荐</div>
+            <div id="aiSimilarList" class="ai-similar-list ai-loading">加载中...</div>
+        </div>
+        {% endif %}
+
+        {% if ai_features.qa %}
+        <div>
+            <div style="font-size:13px;color:#666;font-weight:bold;margin-bottom:6px;">❓ 向 AI 提问（基于本书内容）</div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
+                <input id="aiQuestion" type="text" placeholder="例如：这本书讲了什么核心内容？" maxlength="500"
+                       style="flex:1;padding:8px 12px;border:1px solid #c8b8ff;border-radius:6px;font-size:13px;"
+                       onkeydown="if(event.key==='Enter')askAI()">
+                <button class="ai-action-btn ai-think-btn" onclick="askAI()" id="aiAskBtn">提问</button>
+            </div>
+            <div id="aiAnswerBox" class="ai-qa-box" style="display:none;"></div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+    {% if current_user %}
+    <!-- 我的阅读状态 -->
+    <div class="section">
+        <h3>📖 我的阅读状态</h3>
+        <div class="reading-status">
+            <select id="readStatus">
+                <option value="unread" {% if not reading_record or reading_record.status == 'unread' %}selected{% endif %}>📘 未读</option>
+                <option value="reading" {% if reading_record and reading_record.status == 'reading' %}selected{% endif %}>📙 在阅读</option>
+                <option value="finished" {% if reading_record and reading_record.status == 'finished' %}selected{% endif %}>📗 已读完</option>
+            </select>
+            <button onclick="updateReadingStatus()">更新状态</button>
+            <button id="favBtn" class="fav-btn {% if is_favorited %}is-fav{% endif %}" onclick="toggleFavorite()" style="margin-left:auto;">
+                {% if is_favorited %}❤️ 已收藏{% else %}🤍 收藏图书{% endif %}
+            </button>
+        </div>
+    </div>
+    {% endif %}
+    <!-- 读后感 -->
+    <div class="section">
+        <h3>💭 读后感</h3>
+        {% if current_user %}
+        <div class="form-box">
+            <textarea id="reviewContent" placeholder="写下你的读后感...">{{ my_review.content if my_review else '' }}</textarea>
+            <div class="form-row">
+                <label>评分：</label>
+                <select id="reviewRating">
+                    <option value="5" {% if my_review and my_review.rating == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐</option>
+                    <option value="4" {% if my_review and my_review.rating == 4 %}selected{% endif %}>⭐⭐⭐⭐</option>
+                    <option value="3" {% if my_review and my_review.rating == 3 %}selected{% endif %}>⭐⭐⭐</option>
+                    <option value="2" {% if my_review and my_review.rating == 2 %}selected{% endif %}>⭐⭐</option>
+                    <option value="1" {% if my_review and my_review.rating == 1 %}selected{% endif %}>⭐</option>
+                </select>
+                <label><input type="checkbox" id="reviewPublic" checked> 公开</label>
+                <button onclick="submitReview()">提交读后感</button>
+            </div>
+        </div>
+        {% endif %}
+        <div id="reviewsList" style="margin-top:15px;">
+            {% if reviews %}
+                {% for r in reviews %}
+                <div class="review-item">
+                    <div class="review-header">
+                        <span class="review-author">{{ r.user_name or r.user_account }}</span>
+                        <span class="review-time">{{ r.created_at }}</span>
+                    </div>
+                    <div class="review-rating">{{ '⭐' * r.rating }}</div>
+                    <div class="review-content">{{ r.content or '（无内容）' }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-tip">暂无读后感，来做第一个分享的人吧！</div>
+            {% endif %}
+        </div>
+    </div>
+    <!-- 读书笔记 -->
+    <div class="section">
+        <h3>📝 读书笔记</h3>
+        {% if current_user %}
+        <div class="form-box">
+            <textarea id="noteContent" placeholder="记录你的读书笔记、重点摘录..."></textarea>
+            <div class="form-row">
+                <label><input type="checkbox" id="notePublic" checked> 公开（所有人可见）</label>
+                <button onclick="submitNote()">添加笔记</button>
+            </div>
+        </div>
+        {% endif %}
+        <div id="notesList" style="margin-top:15px;">
+            {% if notes %}
+                {% for n in notes %}
+                <div class="note-item">
+                    <div class="note-header">
+                        <span class="note-author">{{ n.user_name or n.user_account }}
+                            {% if n.is_public %}
+                            <span class="badge badge-public">公开</span>
+                            {% else %}
+                            <span class="badge badge-private">私有</span>
+                            {% endif %}
+                        </span>
+                        <span class="note-time">{{ n.created_at }}</span>
+                    </div>
+                    <div class="note-content">{{ n.content }}</div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-tip">暂无笔记</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='vendor/ai-md/marked.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/ai-md/highlight.min.js') }}"></script>
+<script src="{{ url_for('static', filename='vendor/ai-md/purify.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ai_markdown.js') }}"></script>
+<script>
+const bookId = "{{ book.id }}";
+function updateReadingStatus() {
+    const status = document.getElementById('readStatus').value;
+    const fd = new FormData();
+    fd.append('book_id', bookId);
+    fd.append('status', status);
+    fetch('/book/api/reading_status', {method:'POST', body:fd})
+    .then(r=>r.json()).then(res=>{
+        alert(res.msg);
+    });
+}
+function submitReview() {
+    const content = document.getElementById('reviewContent').value.trim();
+    const rating = document.getElementById('reviewRating').value;
+    const isPublic = document.getElementById('reviewPublic').checked ? '1' : '0';
+    const fd = new FormData();
+    fd.append('book_id', bookId);
+    fd.append('content', content);
+    fd.append('rating', rating);
+    fd.append('is_public', isPublic);
+    fetch('/book/api/review/add', {method:'POST', body:fd})
+    .then(r=>r.json()).then(res=>{
+        alert(res.msg);
+        if(res.code === 200) location.reload();
+    });
+}
+function submitNote() {
+    const content = document.getElementById('noteContent').value.trim();
+    if(!content) { alert('笔记内容不能为空'); return; }
+    const isPublic = document.getElementById('notePublic').checked ? '1' : '0';
+    const fd = new FormData();
+    fd.append('book_id', bookId);
+    fd.append('content', content);
+    fd.append('is_public', isPublic);
+    fetch('/book/api/note/add', {method:'POST', body:fd})
+    .then(r=>r.json()).then(res=>{
+        alert(res.msg);
+        if(res.code === 200) location.reload();
+    });
+}
+function toggleFavorite() {
+    const btn = document.getElementById('favBtn');
+    const fd = new FormData();
+    fd.append('book_id', bookId);
+    fetch('/book/api/favorite/toggle', {method:'POST', body:fd})
+    .then(r=>r.json()).then(res=>{
+        if(res.code === 200) {
+            const fav = res.data && res.data.is_favorite;
+            btn.innerHTML = fav ? '❤️ 已收藏' : '🤍 收藏图书';
+            btn.classList.toggle('is-fav', !!fav);
+            btn.style.background = fav ? 'linear-gradient(135deg,#c53030,#e53e3e)' : 'linear-gradient(135deg,#e53e3e,#fc8181)';
+        }
+        alert(res.msg);
+    });
+}
+
+// ============== AI 智能助手相关 ==============
+window.addEventListener('DOMContentLoaded', function(){
+    if(!document.getElementById('aiSummaryBox') && !document.getElementById('aiSimilarList')) return;
+    loadAiSummary();
+});
+
+function loadAiSummary(){
+    const box = document.getElementById('aiSummaryBox');
+    if(!box) return;
+    fetch(`/config/api/ai/summary/${bookId}`, {method:'POST'})
+    .then(r=>r.json())
+    .then(res=>{
+        box.classList.remove('ai-loading');
+        if(res.code !== 200){
+            box.innerHTML = '<span class="ai-error">摘要暂不可用：' + (res.msg||'') + '</span>';
+            return;
+        }
+        const summary = (res.data && res.data.summary) || '';
+        if(summary){
+            box.innerText = summary;
+        } else if(res.msg && res.msg.indexOf('暂无可读') >= 0){
+            box.innerHTML = '<span style="color:#888;">⏳ ' + escapeHtmlStr(res.msg) + '</span>';
+        } else {
+            box.innerHTML = '<span style="color:#888;">暂无摘要</span>';
+        }
+        const tagBox = document.getElementById('aiTagList');
+        const tags = (res.data && res.data.tags) || [];
+        if(tagBox && tags.length > 0){
+            tagBox.style.display = 'flex';
+            tagBox.innerHTML = tags.map(t=>`<span class="ai-tag">${escapeHtmlStr(t)}</span>`).join('');
+        }
+    })
+    .catch(err=>{
+        box.classList.remove('ai-loading');
+        box.innerHTML = '<span class="ai-error">加载失败：' + err + '</span>';
+    });
+}
+
+function regenerateSummary(){
+    if(!confirm('确定要重新生成 AI 摘要和标签吗？（可能耗时数秒）')) return;
+    const btn = document.getElementById('aiRegenBtn');
+    if(!btn) return;
+    const orig = btn.innerText;
+    btn.innerText = '⏳ 生成中...'; btn.disabled = true;
+    const box = document.getElementById('aiSummaryBox');
+    box.classList.add('ai-loading');
+    box.innerText = '正在调用 AI 生成摘要...';
+    fetch(`/config/api/ai/summary/${bookId}`, {method:'POST'})
+    .then(r=>r.json())
+    .then(res=>{
+        if(res.code === 200){
+            box.classList.remove('ai-loading');
+            box.innerText = (res.data && res.data.summary) || '(生成完成但内容为空)';
+            const tagBox = document.getElementById('aiTagList');
+            const tags = (res.data && res.data.tags) || [];
+            if(tagBox && tags.length > 0){
+                tagBox.style.display = 'flex';
+                tagBox.innerHTML = tags.map(t=>`<span class="ai-tag">${escapeHtmlStr(t)}</span>`).join('');
+            }
+            alert('✅ 摘要已重新生成');
+        } else {
+            alert('生成失败：' + (res.msg||'未知错误'));
+            loadAiSummary();
+        }
+    })
+    .catch(err=>{ alert('请求失败：' + err); loadAiSummary(); })
+    .finally(()=>{ btn.innerText = orig; btn.disabled = false; });
+}
+
+function askAI(){
+    const q = document.getElementById('aiQuestion').value.trim();
+    if(!q){ alert('请输入问题'); return; }
+    const btn = document.getElementById('aiAskBtn');
+    const box = document.getElementById('aiAnswerBox');
+    const orig = btn.innerText;
+    btn.innerText = '⏳ 思考中...'; btn.disabled = true;
+    btn.classList.add('is-thinking');            // 玄幻思考态（共享样式）
+    box.style.display = 'block';
+    // 思考中：旋转法阵 + 分阶段文案 + 呼吸点（与首页 / 经验社区同一套）
+    const THINK_STAGES = ['正在检索本书内容…', '正在组织语言…', '正在润色答案…'];
+    box.innerHTML = '<div class="ai-thinking"><span class="ai-think-orb"></span>' +
+                    '<span class="ai-think-text">' + THINK_STAGES[0] + '</span>' +
+                    '<span class="ai-think-dots"><i></i><i></i><i></i></span></div>';
+    let tsi = 0;
+    const thinkTimer = setInterval(function(){
+        if (tsi >= THINK_STAGES.length - 1) return;
+        tsi += 1;
+        const el = box.querySelector('.ai-think-text');
+        if (el) el.textContent = THINK_STAGES[tsi];
+    }, 1500);
+    const fd = new FormData();
+    fd.append('question', q);
+    fd.append('book_id', bookId);
+    fetch('/config/api/ai/ask', {method:'POST', body:fd})
+    .then(r=>r.json())
+    .then(res=>{
+        if(res.code === 200){
+            const data = res.data || {};
+            // 答案走 Markdown 排版（表格/代码块…），只改呈现不改原文；AiMarkdown 缺失时回退旧行为
+            let html = window.AiMarkdown
+                ? '<div class="ai-md" style="margin-bottom:8px;">' + window.AiMarkdown.render(data.answer||'') + '</div>'
+                : '<div style="margin-bottom:8px;color:#5a4fb0;font-weight:bold;">💬 ' + escapeHtmlStr(data.answer||'') + '</div>';
+            if(data.sources && data.sources.length > 0){
+                // 定位信息优先条款号、其次页码；都可能没有，此时只显示书名
+                const locOf = (s)=>{
+                    let loc = s.book_name ? '《' + s.book_name + '》' : '';
+                    if (s.section) { loc += ' ' + s.section; }
+                    else if (s.page) { loc += ' P' + s.page; }
+                    return loc;
+                };
+                html += '<div style="font-size:12px;color:#888;border-top:1px dashed #c8b8ff;padding-top:6px;">📌 参考来源：<br>' +
+                    data.sources.map((s,i)=>`<div style="margin-top:4px;">[${i+1}] ${escapeHtmlStr(locOf(s))}：${escapeHtmlStr(dedupSecPath(stripSecPrefix(s.section, s.text||'')).slice(0,80))}...</div>`).join('') + '</div>';
+            }
+            box.innerHTML = html;
+        } else {
+            box.innerHTML = '<span class="ai-error">问答失败：' + escapeHtmlStr(res.msg||'') + '</span>';
+        }
+    })
+    .catch(err=>{ box.innerHTML = '<span class="ai-error">请求失败：'+err+'</span>'; })
+    .finally(()=>{
+        clearInterval(thinkTimer);
+        btn.innerText = orig; btn.disabled = false;
+        btn.classList.remove('is-thinking');
+    });
+}
+
+function escapeHtmlStr(s){
+    if(s==null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+// 现象3 修复：来源章节路径去重，与首页 renderSources 同逻辑。
+// s.text 形如「分支结构 / 变量与数据类型 / 分支结构」——按 ' / ' 切分后去重，
+// 比较键忽略前导编号（「2.1 分支结构」与「3.2 分支结构」视为同一标题），保留首次出现，
+// 最多 3 个真正不同的章节，避免同名不同章造成的视觉重复。
+function dedupSecPath(text){
+    if(!text) return '';
+    var segs = String(text).split(' / ');
+    var seen = Object.create(null);
+    var out = [];
+    segs.forEach(function(seg){
+        var key = seg.trim().replace(/^[\d.．、\s]+/, '').toLowerCase();
+        if(!key || seen[key]) return;
+        seen[key] = true;
+        out.push(seg.trim());
+    });
+    return out.slice(0, 3).join(' / ');
+}
+// 现象3 同源修复：当 s.section 已是路径前缀时，去掉它，
+// 避免「循环结构：循环结构 / 函数」式重复（书名+章节已在前缀 locOf 中渲染过）。
+function stripSecPrefix(section, text){
+    if(!section || !text) return text || '';
+    var s = String(section).trim();
+    var t = String(text).trim();
+    if(!s) return t;
+    if(t.toLowerCase().indexOf(s.toLowerCase()) === 0){
+        var rest = t.slice(s.length).replace(/^[\s:：/／]+/, '').trim();
+        return rest || t;  // 整条路径就是 section 时保留原样，避免清空
+    }
+    return t;
+}
+</script>
+</div>
+{% endblock %}

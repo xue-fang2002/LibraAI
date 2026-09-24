@@ -1,0 +1,178 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}操作日志 · 配置中心{% endblock %}
+
+{% block extra_css %}
+<style>
+.bm-ws {
+    min-height: 100%; background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ef 100%);
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    color: #1f2937; display: flex; flex-direction: column; overflow-y: auto;
+}
+.header-top {
+    background: linear-gradient(90deg, #2A4365, #335788); color: #fff;
+    padding: 14px 24px; font-size: 18px; font-weight: bold;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.back-btn {
+    background: #fff; color: #2A4365; padding: 6px 16px;
+    text-decoration: none; border-radius: 6px; font-size: 14px;
+    font-weight: normal; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all 0.2s ease;
+}
+.back-btn:hover { background: #f0f4f8; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.20); }
+.logs-container { max-width: 1200px; width: 100%; margin: 0 auto; padding: 20px; }
+.section { background: #fff; border-radius: 8px; padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 20px; }
+.section h3 { color: #2A4365; margin-bottom: 15px; font-size: 16px;
+    border-bottom: 2px solid #e8f0f8; padding-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #2A4365; color: #fff; padding: 10px 8px; text-align: center;
+    position: sticky; top: 0; z-index: 5; }
+td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
+td.detail-cell { text-align: left; max-width: 300px; word-break: break-all; white-space: normal; }
+tbody tr:nth-child(even) { background: #f8fafc; }
+tbody tr:hover { background: #e8f0f8; }
+.table-scroll { overflow: auto; max-height: calc(100vh - 240px); }
+.pagination { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 20px; }
+.pagination a, .pagination span { padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; cursor: pointer; }
+.pagination a { background: #2A4365; color: #fff; }
+.pagination a:hover { background: #1f3350; }
+.pagination a.disabled { background: #ccc; color: #888; cursor: not-allowed; pointer-events: none; }
+.pagination span { color: #666; }
+.stat-bar { display: flex; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+.stat-item { background: #f0f4f8; padding: 8px 16px; border-radius: 6px; font-size: 13px; }
+.stat-item b { color: #2A4365; }
+.action-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; color: #fff; white-space: nowrap; }
+.tag-login { background: #27ae60; }
+.tag-logout { background: #7f8c8d; }
+.tag-book { background: #3498db; }
+.tag-user { background: #9b59b6; }
+.tag-file { background: #e67e22; }
+.tag-cat { background: #1abc9c; }
+.tag-ai { background: #6c5ce7; }
+.tag-other { background: #95a5a6; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bm-ws">
+    <div class="header-top">
+        <span>📋 操作日志</span>
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="/config" class="back-btn">← 返回配置中心</a>
+        </div>
+    </div>
+
+    <div class="logs-container">
+        <div class="section">
+            <h3>📋 系统操作日志</h3>
+            <div class="stat-bar">
+                <div class="stat-item">总记录数: <b>{{ total }}</b></div>
+                <div class="stat-item">当前页: <b>{{ page }}</b> / {{ total_pages or 1 }}</div>
+                <div class="stat-item">每页: <b>{{ per_page }}</b> 条</div>
+            </div>
+
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:5%">ID</th>
+                            <th style="width:10%">操作人</th>
+                            <th style="width:14%">操作类型</th>
+                            <th style="width:8%">目标</th>
+                            <th style="width:34%">详情</th>
+                            <th style="width:9%">IP</th>
+                            <th style="width:14%">时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ log.id }}</td>
+                            <td>{{ log.user_name or log.user_account or '系统' }}</td>
+                            <td>
+                                {% set action = log.action %}
+                                {% if action in ('用户登录', 'login') %}
+                                    <span class="action-tag tag-login">用户登录</span>
+                                {% elif action in ('用户退出', 'logout') %}
+                                    <span class="action-tag tag-logout">用户退出</span>
+                                {% elif action and (action.startswith('图书') or action.startswith('上传') or action.startswith('下载') or action.startswith('新增图书') or action.startswith('编辑图书') or action.startswith('删除图书') or action.startswith('批量')) %}
+                                    <span class="action-tag tag-book">{{ action }}</span>
+                                {% elif action and (action.startswith('分类') or action.startswith('新增分类') or action.startswith('编辑分类') or action.startswith('移动分类')) %}
+                                    <span class="action-tag tag-cat">{{ action }}</span>
+                                {% elif action and action.startswith('user_') %}
+                                    <span class="action-tag tag-user">
+                                        {% set umap = {'user_add':'新增用户','user_resetpwd':'重置密码','user_delete':'删除用户','user_import':'批量导入用户','user_toggle':'用户状态切换','user_updateperms':'更新权限','user_changepwd':'修改密码'} %}
+                                        {{ umap.get(action, action) }}
+                                    </span>
+                                {% elif action and (action.startswith('文件') or action.startswith('上传文件')) %}
+                                    <span class="action-tag tag-file">{{ action }}</span>
+                                {% elif action and action.startswith('ai_') %}
+                                    <span class="action-tag tag-ai">{{ action }}</span>
+                                {% else %}
+                                    <span class="action-tag tag-other">{{ action }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.target_type %}
+                                    <span style="color:#888;font-size:11px;">{{ log.target_type }}</span>
+                                    {% if log.target_id %}
+                                        <br><span style="font-size:11px;color:#bbb;">{{ log.target_id[:8] }}...</span>
+                                    {% endif %}
+                                {% else %}-{% endif %}
+                            </td>
+                            <td class="detail-cell" style="font-size:12px;color:#555;">
+                                {% if log.detail %}
+                                    {% set detail = log.detail %}
+                                    {% if detail.startswith('{') and detail.endswith('}') %}
+                                        {% set detail_dict = detail | fromjson %}
+                                        {% for key, value in detail_dict.items() %}
+                                            <div style="margin-bottom:2px;">
+                                                <span style="color:#888;">{{ key }}:</span>
+                                                <span style="color:#333;">{{ value }}</span>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        {{ detail }}
+                                    {% endif %}
+                                {% else %}-{% endif %}
+                            </td>
+                            <td style="font-size:11px;color:#888;">{{ log.ip or '-' }}</td>
+                            <td style="font-size:12px;">{{ log.created_at }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" style="padding:40px;color:#999;">暂无操作日志</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if total_pages > 1 %}
+            <div class="pagination">
+                {% if page > 1 %}
+                    <a href="{{ url_for('config_center.logs_page', page=page-1, per_page=per_page) }}">← 上一页</a>
+                {% else %}
+                    <span class="disabled">← 上一页</span>
+                {% endif %}
+                <span>第 {{ page }} 页 / 共 {{ total_pages }} 页</span>
+                {% if page < total_pages %}
+                    <a href="{{ url_for('config_center.logs_page', page=page+1, per_page=per_page) }}">下一页 →</a>
+                {% else %}
+                    <span class="disabled">下一页 →</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 详情单元格 JSON 折叠优化可后续扩展
+</script>
+{% endblock %}

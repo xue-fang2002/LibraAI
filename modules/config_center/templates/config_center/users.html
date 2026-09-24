@@ -1,0 +1,567 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}用户管理 · 配置中心{% endblock %}
+
+{% block extra_css %}
+<style>
+.bm-ws {
+    min-height: 100%; background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ef 100%);
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    color: #1f2937; display: flex; flex-direction: column; overflow-y: auto;
+}
+.header-top {
+    background: linear-gradient(90deg, #2A4365, #335788); color: #fff;
+    padding: 14px 24px; font-size: 18px; font-weight: bold;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.back-btn {
+    background: #fff; color: #2A4365; padding: 6px 16px;
+    text-decoration: none; border-radius: 6px; font-size: 14px;
+    font-weight: normal; box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    display: inline-flex; align-items: center; gap: 4px;
+    transition: all 0.2s ease;
+}
+.back-btn:hover { background: #f0f4f8; transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.20); }
+
+/* 标题行（横向 tab） */
+.um-tab-row { display: flex; gap: 0; padding: 16px 20px 0; max-width: 1200px; width: 100%; margin: 0 auto; flex-shrink: 0; }
+.um-tab {
+    padding: 10px 24px; border: 1px solid #cdd6e3; border-bottom: none;
+    background: #eef2f8; color: #5a6c80; cursor: pointer; font-size: 14px; font-weight: 600;
+    border-radius: 8px 8px 0 0; transition: all .15s ease; user-select: none;
+}
+.um-tab:hover { background: #f5f7fa; color: #2A4365; }
+.um-tab.active { background: #fff; color: #2A4365; border-color: #cdd6e3; position: relative; z-index: 2; }
+.um-tab + .um-tab { margin-left: -1px; }
+
+.um-panel { display: none; }
+.um-panel.active { display: block; animation: fade .2s ease; }
+@keyframes fade { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+
+.um-body { max-width: 1200px; width: 100%; margin: 0 auto; padding: 0 20px 20px; flex: 1; }
+.um-content { background: #fff; border: 1px solid #cdd6e3; border-radius: 0 8px 8px 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+.section h3 { color: #2A4365; margin-bottom: 15px; font-size: 16px;
+    border-bottom: 2px solid #e8f0f8; padding-bottom: 8px; }
+.tool-bar { padding: 0 0 12px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.tool-bar button { padding: 6px 12px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; border-radius: 3px; }
+.btn-blue { background: #2A4365; color: #fff; }
+.btn-red { background: #bb2222; color: #fff; }
+.btn-green { background: #27ae60; color: #fff; }
+.btn-gray { background: #7f8c8d; color: #fff; }
+.table-scroll { overflow: auto; max-height: calc(100vh - 320px); border: 1px solid #e8f0f8; border-radius: 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #2A4365; color: #fff; padding: 10px 8px; text-align: center; position: sticky; top: 0; z-index: 5; }
+td { padding: 8px; text-align: center; border-bottom: 1px solid #eee; }
+tbody tr:hover { background: #e8f0f8; }
+.role-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; color: #fff; }
+.role-admin { background: #e74c3c; }
+.role-superadmin { background: #8e44ad; }
+.role-user { background: #3498db; }
+.status-on { color: #27ae60; font-weight: bold; }
+.status-off { color: #e74c3c; font-weight: bold; }
+.perm-count { background: #f0f4f8; border-radius: 10px; padding: 2px 10px; font-size: 12px; }
+.op-btn { padding: 3px 8px; border: none; border-radius: 2px; cursor: pointer; font-size: 12px; color: #fff; margin: 1px; }
+/* 弹窗 */
+.cfg-mask { position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4); display: none; justify-content: center;
+    align-items: center; z-index: 9999; padding: 10px; }
+.cfg-mask.show { display: flex; }
+.cfg-dialog { width: 640px; max-width: calc(100vw - 20px); max-height: 90vh;
+    background: #fff; padding: 20px; border-radius: 6px;
+    overflow-y: auto; display: flex; flex-direction: column; }
+.cfg-dialog h3 { margin-bottom: 15px; color: #2A4365; flex-shrink: 0; font-size: 16px; border-bottom: none; padding-bottom: 0; }
+.cfg-form-item { margin-bottom: 12px; flex-shrink: 0; }
+.cfg-form-item label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: bold; }
+.cfg-form-item input, .cfg-form-item select { width: 100%; padding: 7px; border: 1px #ccc solid; border-radius: 3px; font-size: 13px; box-sizing: border-box; }
+.cfg-dialog-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; flex-shrink: 0; }
+.cfg-dialog-btns button { padding: 6px 14px; border: none; border-radius: 3px; cursor: pointer; font-size: 13px; }
+.perm-group { margin-bottom: 14px; }
+.perm-group-title { font-size: 13px; font-weight: 700; color: #2A4365; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #e0e8f2; }
+.perm-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; margin-bottom: 8px;
+    border: 1px solid #e0e8f2; border-radius: 4px; padding: 10px; background: #fafbfc; }
+.perm-grid label { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 5px; font-size: 12px; font-weight: normal; cursor: pointer; padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
+.perm-grid label input[type="checkbox"] { flex-shrink: 0; margin: 0; }
+.perm-grid label:hover { background: #f0f4f8; }
+.tip-text { color: #bb2222; margin-bottom: 10px; font-size: 13px; flex-shrink: 0; }
+/* 模块访问权限面板 */
+.mod-acc-row { display:flex; align-items:center; gap:14px; padding:12px 14px; border:1px solid #e8f0f8; border-radius:8px; margin-bottom:10px; flex-wrap:wrap; }
+.mod-acc-name { font-weight:600; font-size:14px; min-width:150px; display:flex; align-items:center; gap:8px; }
+.mod-acc-opts { display:flex; gap:8px; flex-wrap:wrap; }
+.mod-acc-opt { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border:1px solid #cdd6e3; border-radius:18px; cursor:pointer; font-size:13px; color:#41566f; background:#fff; user-select:none; transition:all .15s; }
+.mod-acc-opt:hover { border-color:#2A4365; }
+.mod-acc-opt input { accent-color:#2A4365; margin:0; }
+.mod-acc-opt.sel-public { background:#e8f5e9; border-color:#27ae60; color:#1e7d45; }
+.mod-acc-opt.sel-login  { background:#e7f0fb; border-color:#2980b9; color:#1f6391; }
+.mod-acc-opt.sel-admin  { background:#fdecea; border-color:#c0392b; color:#a02c20; }
+.mod-acc-opt.sel-selected { background:#f0e9fb; border-color:#8e44ad; color:#6c3483; }
+.mod-acc-users { width:100%; margin-top:4px; border:1px solid #eef1f5; border-radius:6px; padding:10px; display:none; }
+.mod-acc-users.show { display:block; }
+.mod-acc-users .perm-grid { border:none; padding:0; }
+/* 加载遮罩 / 按钮忙碌态（复用现有配色，不改 UI 风格） */
+.um-loading-overlay { position: fixed; left:0; top:0; width:100%; height:100%;
+    background: rgba(42,67,101,0.30); display:none; align-items:center; justify-content:center; z-index:10000; }
+.um-loading-overlay.show { display:flex; }
+.um-loading-box { background:#fff; border-radius:8px; padding:22px 30px; display:flex; flex-direction:column; align-items:center; gap:12px;
+    box-shadow:0 6px 24px rgba(0,0,0,0.20); }
+.um-spinner { width:34px; height:34px; border:4px solid #cdd6e3; border-top-color:#2A4365; border-radius:50%; animation: umspin .8s linear infinite; }
+@keyframes umspin { to { transform: rotate(360deg); } }
+.um-loading-text { color:#2A4365; font-size:14px; font-weight:600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bm-ws">
+    <div class="header-top">
+        <span>👤 用户管理</span>
+        <div style="display:flex; align-items:center; gap:14px;">
+            <a href="/config" class="back-btn">← 返回配置中心</a>
+        </div>
+    </div>
+
+    <!-- 一行标题 tab -->
+    <div class="um-tab-row">
+        <div class="um-tab active" data-panel="um-panel-users" onclick="umSwitch('um-panel-users')">👤 用户账号列表</div>
+        <div class="um-tab" data-panel="um-panel-access" onclick="umSwitch('um-panel-access')">🔐 模块访问权限</div>
+    </div>
+
+    <div class="um-body">
+        <!-- 面板1：用户账号列表 -->
+        <div class="um-panel active um-content" id="um-panel-users">
+            <div class="tool-bar">
+                <button class="btn-green" onclick="openAddUser()">新增用户</button>
+                <button class="btn-blue" onclick="document.getElementById('importFile').click()">📥 Excel/CSV导入</button>
+                <button class="btn-gray" onclick="downloadUserTemplate()">📄 下载模板</button>
+                <input type="file" id="importFile" accept=".csv,.xlsx" style="display:none;" onchange="doImportUser(this)">
+                <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+                    <input type="text" id="searchUser" placeholder="搜索账号/名字..." oninput="filterUserTable()"
+                        style="padding:5px 8px;border:1px solid #ccc;border-radius:3px;width:160px;">
+                    <button class="btn-blue" onclick="clearUserFilter()">重置</button>
+                </div>
+            </div>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>账号</th><th>名字</th><th>角色</th><th>权限数</th><th>状态</th><th>最后登录</th><th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body">
+                        {% for u in users %}
+                        <tr data-account="{{ u.account }}" data-name="{{ u.name or '' }}">
+                            <td><b>{{ u.account }}</b></td>
+                            <td>{{ u.name or '-' }}</td>
+                            <td>
+                                {% if u.role == 'superadmin' %}
+                                    <span class="role-tag role-superadmin">超级管理员</span>
+                                {% elif u.role == 'admin' %}
+                                    <span class="role-tag role-admin">管理员</span>
+                                {% else %}
+                                    <span class="role-tag role-user">普通用户</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set perm_count = (u.permissions|fromjson)|length if u.permissions and u.permissions.startswith('[') else 0 %}
+                                {% if u.role in ('admin', 'superadmin') %}
+                                    <span class="perm-count" title="管理员拥有全部权限">全部</span>
+                                {% else %}
+                                    <span class="perm-count">{{ perm_count }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if u.is_active == 0 or u.is_active == false %}
+                                    <span class="status-off">已禁用</span>
+                                {% else %}
+                                    <span class="status-on">正常</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-size:12px;color:#888;">{{ u.last_login_at or '从未登录' }}</td>
+                            <td>
+                                <button class="op-btn" style="background:#3498db;" onclick="openEditPerms('{{ u.id }}')">权限</button>
+                                <button class="op-btn" style="background:#e67e22;" onclick="resetPwd(this, '{{ u.id }}', '{{ u.account }}')">重置密码</button>
+                                {% if u.is_active == 0 or u.is_active == false %}
+                                    <button class="op-btn" style="background:#27ae60;" onclick="toggleUser(this, '{{ u.id }}', 1, '{{ u.account }}')">启用</button>
+                                {% else %}
+                                    <button class="op-btn" style="background:#7f8c8d;" onclick="toggleUser(this, '{{ u.id }}', 0, '{{ u.account }}')">禁用</button>
+                                {% endif %}
+                                {# 超级管理员不可删；管理员账号只有超级管理员能删 #}
+                                {% set can_delete = (u.role != 'superadmin') and (u.role != 'admin' or is_superadmin) %}
+                                {% if can_delete %}
+                                    <button class="op-btn" style="background:#e74c3c;" onclick="delUser(this, '{{ u.id }}', '{{ u.account }}')">删除</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" style="padding:40px;color:#999;">暂无用户</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 面板2：模块访问权限 -->
+        <div class="um-panel um-content" id="um-panel-access">
+            <div class="tip-text" style="color:#41566f;">所有大模块默认「公开」（登录用户均可见）；设为「选择用户可看」时需勾选允许访问的用户。新增模块会自动出现在此。</div>
+            <div id="modAccessList">
+                {% for m in modules_row %}
+                {% set cur = module_access.get(m.module_id, {}) %}
+                {% set lvl = cur.min_level if cur else 'public' %}
+                <div class="mod-acc-row" data-module="{{ m.module_id }}">
+                    <div class="mod-acc-name"><span>{{ m.icon }}</span><span>{{ m.display_name }}</span></div>
+                    <div class="mod-acc-opts">
+                        <label class="mod-acc-opt {% if lvl=='public' %}sel-public{% endif %}"><input type="radio" name="mac-{{ m.module_id }}" value="public" {% if lvl=='public' %}checked{% endif %} onchange="onMacChange('{{ m.module_id }}')">🟢 公开</label>
+                        <label class="mod-acc-opt {% if lvl=='login' %}sel-login{% endif %}"><input type="radio" name="mac-{{ m.module_id }}" value="login" {% if lvl=='login' %}checked{% endif %} onchange="onMacChange('{{ m.module_id }}')">🔵 登录可看</label>
+                        <label class="mod-acc-opt {% if lvl=='admin' %}sel-admin{% endif %}"><input type="radio" name="mac-{{ m.module_id }}" value="admin" {% if lvl=='admin' %}checked{% endif %} onchange="onMacChange('{{ m.module_id }}')">🔴 管理员可看</label>
+                        <label class="mod-acc-opt {% if lvl=='selected' %}sel-selected{% endif %}"><input type="radio" name="mac-{{ m.module_id }}" value="selected" {% if lvl=='selected' %}checked{% endif %} onchange="onMacChange('{{ m.module_id }}')">👤 选择用户可看</label>
+                    </div>
+                    <div class="mod-acc-users {% if lvl=='selected' %}show{% endif %}" id="macu-{{ m.module_id }}">
+                        <div class="perm-grid">
+                            {% for u in users %}
+                            <label><input type="checkbox" class="macu-cb" data-module="{{ m.module_id }}" value="{{ u.id }}" {% if lvl=='selected' and cur.allowed_users and u.id|string in cur.allowed_users|map('string')|list %}checked{% endif %}> {{ u.name or u.account }}</label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="cfg-dialog-btns" style="margin-top:6px;">
+                <button class="btn-blue" onclick="saveModuleAccess(this)">保存模块访问权限</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增用户弹窗 -->
+<div class="cfg-mask" id="maskAddUser">
+    <div class="cfg-dialog">
+        <h3>新增用户</h3>
+        <p class="tip-text">初始密码统一为 123456，创建后可自行修改</p>
+        <div class="cfg-form-item"><label>账号（字母/数字/下划线）</label>
+            <input type="text" id="newUserAccount" placeholder="如 zhangsan"></div>
+        <div class="cfg-form-item"><label>名字</label>
+            <input type="text" id="newUserName" placeholder="显示名字（可选）"></div>
+        <div class="cfg-form-item"><label>角色</label>
+            <select id="newUserRole" onchange="onAddRoleChange()">
+                <option value="user">普通用户</option>
+                <option value="admin" {% if not is_superadmin %}disabled title="仅超级管理员可创建管理员账号"{% endif %}>管理员</option>
+            </select>
+            {% if not is_superadmin %}
+            <div style="margin-top:6px;font-size:12px;color:#999;">（当前账号为普通管理员，无法创建管理员）</div>
+            {% endif %}
+        </div>
+        <div class="cfg-form-item"><label>权限（仅对普通用户生效）</label>
+            <p class="tip-text" id="addPermsTip" style="display:none;"></p>
+            <div id="newUserPerms"></div></div>
+        <div class="cfg-dialog-btns">
+            <button onclick="closeAddUser()">取消</button>
+            <button class="btn-blue" onclick="submitAddUser(this)">确认新增</button>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑权限弹窗 -->
+<div class="cfg-mask" id="maskEditPerms">
+    <div class="cfg-dialog">
+        <h3>编辑用户权限</h3>
+        <p class="tip-text" id="editPermsTip"></p>
+        <input type="hidden" id="editPermUserId">
+        <div class="cfg-form-item"><label>权限项</label>
+            <div id="editPermGrid"></div></div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button class="btn-blue" style="padding:4px 10px;font-size:12px;" onclick="toggleAllPerms(true)">全选</button>
+            <button class="btn-gray" style="padding:4px 10px;font-size:12px;" onclick="toggleAllPerms(false)">清空</button>
+        </div>
+        <div class="cfg-dialog-btns">
+            <button onclick="closeEditPerms()">取消</button>
+            <button class="btn-blue" onclick="submitEditPerms(this)">保存权限</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const allUsers = {{ all_users|tojson|safe }};
+const allPermissions = {{ all_permissions|tojson|safe }};
+const permNames = {{ perm_names|tojson|safe }};
+const permGroups = {{ perm_groups|tojson|safe }};
+
+// ============ tab 切换 ============
+function umSwitch(panelId) {
+    document.querySelectorAll('.um-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.um-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.um-tab[data-panel="${panelId}"]`).classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+    try { sessionStorage.setItem('um_tab', panelId); } catch(e){}
+}
+try {
+    const saved = sessionStorage.getItem('um_tab');
+    if (saved && document.getElementById(saved)) umSwitch(saved);
+} catch(e){}
+
+function escapeHtml(s) { if(!s) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function parsePerms(u) {
+    if(u.role === 'admin' || u.role === 'superadmin') return allPermissions;
+    try { return JSON.parse(u.permissions || '[]'); } catch(e) { return []; }
+}
+
+// ============ 渲染权限复选框（按模块分组，竖排） ============
+function renderPermCheckboxes(containerId, checkedPerms) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    (permGroups || []).forEach(function (grp) {
+        const g = document.createElement('div');
+        g.className = 'perm-group';
+        const title = document.createElement('div');
+        title.className = 'perm-group-title';
+        title.textContent = (grp.icon || '📄') + ' ' + grp.display_name;
+        g.appendChild(title);
+        const grid = document.createElement('div');
+        grid.className = 'perm-grid';
+        (grp.perms || []).forEach(function (p) {
+            const label = document.createElement('label');
+            const cb = document.createElement('input');
+            cb.type = 'checkbox'; cb.value = p.key; cb.className = 'perm-cb';
+            if(checkedPerms && checkedPerms.includes(p.key)) cb.checked = true;
+            label.appendChild(cb);
+            label.appendChild(document.createTextNode(p.name || p.key));
+            grid.appendChild(label);
+        });
+        g.appendChild(grid);
+        container.appendChild(g);
+    });
+}
+
+// ============ 权限区可编辑性 ============
+// 管理员/超管的权限由 role 决定：core.db_base.has_permission 与
+// get_user_permissions 都在开头直接对 admin/superadmin 短路返回，
+// 完全不看 users.permissions 字段。所以给管理员勾权限没有任何效果，
+// 留着可勾选只会误导 —— 选管理员时整块置灰并说明原因。
+function setPermsEditable(containerId, editable, tipEl, tipHtml) {
+    const box = document.getElementById(containerId);
+    if (box) {
+        box.style.opacity = editable ? '' : '0.45';
+        box.style.pointerEvents = editable ? '' : 'none';
+        box.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
+            cb.disabled = !editable;
+        });
+    }
+    if (tipEl) {
+        tipEl.innerHTML = editable ? '' : (tipHtml || '');
+        tipEl.style.display = editable ? 'none' : 'block';
+    }
+}
+
+const ADMIN_PERM_TIP = 'ℹ️ 管理员自动拥有全部权限，无需勾选下方权限项（勾了也不会生效）。';
+
+// ============ 新增用户 ============
+function onAddRoleChange() {
+    const isAdmin = document.getElementById('newUserRole').value === 'admin';
+    setPermsEditable('newUserPerms', !isAdmin,
+                     document.getElementById('addPermsTip'), ADMIN_PERM_TIP);
+}
+
+function openAddUser() {
+    document.getElementById('newUserAccount').value = '';
+    document.getElementById('newUserName').value = '';
+    document.getElementById('newUserRole').value = 'user';
+    renderPermCheckboxes('newUserPerms', []);
+    onAddRoleChange();
+    document.getElementById('maskAddUser').classList.add('show');
+}
+function closeAddUser() { document.getElementById('maskAddUser').classList.remove('show'); }
+// ============ 加载提示 / 按钮忙碌态（复用现有配色，不改 UI 风格） ============
+function setBtnBusy(btn, busyText) {
+    if (!btn) return;
+    if (btn._busyOrig === undefined) btn._busyOrig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = busyText || '处理中…';
+}
+function restoreBtn(btn) {
+    if (!btn) return;
+    btn.disabled = false;
+    if (btn._busyOrig !== undefined) btn.innerHTML = btn._busyOrig;
+}
+function showOverlay(text) {
+    let el = document.getElementById('umLoadingOverlay');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'umLoadingOverlay';
+        el.className = 'um-loading-overlay';
+        el.innerHTML = '<div class="um-loading-box"><div class="um-spinner"></div><div class="um-loading-text"></div></div>';
+        document.body.appendChild(el);
+    }
+    el.querySelector('.um-loading-text').textContent = text || '处理中…';
+    el.classList.add('show');
+}
+function hideOverlay() {
+    const el = document.getElementById('umLoadingOverlay');
+    if (el) el.classList.remove('show');
+}
+// 统一 POST 请求：健壮解析 JSON、加载提示、错误不再静默失效
+function umRequest(url, body, opt) {
+    opt = opt || {};
+    const btn = opt.btn || null;
+    const isJson = typeof body === 'string';
+    const headers = opt.headers || (isJson ? { 'Content-Type': 'application/json' } : undefined);
+    if (btn) setBtnBusy(btn, opt.busyText || '处理中…');
+    if (opt.overlay) showOverlay(opt.overlay);
+    return fetch(url, { method: 'POST', body: body, headers: headers })
+        .then(r => r.text())
+        .then(t => {
+            let data;
+            try { data = JSON.parse(t); }
+            catch (e) { throw new Error('服务器返回了非预期内容（可能服务异常）'); }
+            if (data && typeof data === 'object' && data.code !== undefined && data.code !== 200 && data.code !== 0) {
+                throw new Error(data.msg || '操作失败');
+            }
+            return data;
+        })
+        .then(data => {
+            hideOverlay();
+            restoreBtn(btn);
+            if (opt.onOk) { opt.onOk(data); return data; }
+            if (data && data.msg) alert(data.msg);
+            if (opt.reload) location.reload();
+            return data;
+        })
+        .catch(err => {
+            hideOverlay();
+            restoreBtn(btn);
+            alert('操作失败：' + err.message);
+        });
+}
+
+// ============ 新增用户 ============
+function submitAddUser(btn) {
+    const account = document.getElementById('newUserAccount').value.trim();
+    if(!account) { alert('账号不能为空'); return; }
+    const fd = new FormData();
+    fd.append('account', account);
+    fd.append('name', document.getElementById('newUserName').value.trim());
+    fd.append('role', document.getElementById('newUserRole').value);
+    document.querySelectorAll('#newUserPerms .perm-cb:checked').forEach(cb => fd.append('permissions', cb.value));
+    umRequest('/config/api/user/add', fd, { btn: btn, busyText: '新增中…', reload: true });
+}
+
+// ============ 编辑权限 ============
+function openEditPerms(uid) {
+    const u = allUsers.find(x => x.id === uid);
+    if(!u) return;
+    document.getElementById('editPermUserId').value = uid;
+    const tip = document.getElementById('editPermsTip');
+    const isAdm = (u.role === 'admin' || u.role === 'superadmin');
+    tip.textContent = `用户：${u.account}（${u.name || u.account}）`;
+    renderPermCheckboxes('editPermGrid', parsePerms(u));
+    // 管理员权限由 role 决定，此处改 permissions 字段不生效 —— 置灰并说明
+    setPermsEditable('editPermGrid', !isAdm, null, null);
+    if (isAdm) tip.textContent += '　' + ADMIN_PERM_TIP;
+    tip.style.display = 'block';
+    document.getElementById('maskEditPerms').classList.add('show');
+}
+function closeEditPerms() { document.getElementById('maskEditPerms').classList.remove('show'); }
+function toggleAllPerms(on) {
+    document.querySelectorAll('#editPermGrid .perm-cb').forEach(cb => cb.checked = on);
+}
+function submitEditPerms(btn) {
+    const uid = document.getElementById('editPermUserId').value;
+    const fd = new FormData();
+    fd.append('id', uid);
+    document.querySelectorAll('#editPermGrid .perm-cb:checked').forEach(cb => fd.append('permissions', cb.value));
+    umRequest('/config/api/user/updateperms', fd, { btn: btn, busyText: '保存中…', reload: true });
+}
+
+// ============ 重置密码 / 启禁用 / 删除 ============
+function resetPwd(btn, uid, account) {
+    if(!confirm(`确定重置用户 ${account} 的密码为 123456？`)) return;
+    const fd = new FormData(); fd.append('id', uid);
+    umRequest('/config/api/user/resetpwd', fd, { btn: btn, busyText: '重置中…', reload: false });
+}
+function toggleUser(btn, uid, isActive, account) {
+    const statusText = isActive ? '启用' : '禁用';
+    if(!confirm(`确定${statusText}用户 ${account}？`)) return;
+    const fd = new FormData(); fd.append('id', uid); fd.append('is_active', isActive ? '1' : '0');
+    umRequest('/config/api/user/toggle', fd, { btn: btn, busyText: statusText + '中…', reload: true });
+}
+function delUser(btn, uid, account) {
+    if(!confirm(`确定删除用户 ${account}？该操作不可恢复！`)) return;
+    const fd = new FormData(); fd.append('id', uid);
+    umRequest('/config/api/user/delete', fd, { btn: btn, busyText: '删除中…', reload: true });
+}
+
+// ============ 导入用户 ============
+function doImportUser(input) {
+    const file = input.files[0];
+    if(!file) return;
+    const fd = new FormData(); fd.append('file', file);
+    umRequest('/config/api/user/import', fd, {
+        overlay: '正在导入用户，请稍候…',
+        onOk: function(res) {
+            let msg = (res && res.msg) || '导入完成';
+            if (res && res.data && res.data.errors && res.data.errors.length > 0) {
+                msg += '\n' + res.data.errors.join('\n');
+            }
+            alert(msg);
+            if (res && (res.code === 200 || res.code === 0)) location.reload();
+        }
+    });
+    input.value = '';
+}
+function downloadUserTemplate() {
+    const csv = '账号,名字,角色\nzhangsan,张三,user\nlisi,李四,user\n';
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '用户导入模板.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+// ============ 搜索过滤 ============
+function filterUserTable() {
+    const kw = document.getElementById('searchUser').value.trim().toLowerCase();
+    document.querySelectorAll('#user-table-body tr').forEach(tr => {
+        if(!tr.dataset.account) return;
+        const account = tr.dataset.account.toLowerCase();
+        const name = (tr.dataset.name || '').toLowerCase();
+        tr.style.display = (!kw || account.includes(kw) || name.includes(kw)) ? '' : 'none';
+    });
+}
+function clearUserFilter() {
+    document.getElementById('searchUser').value = '';
+    filterUserTable();
+}
+
+// ============ 模块访问权限 ============
+function onMacChange(moduleId) {
+    const checked = document.querySelector(`input[name="mac-${moduleId}"]:checked`);
+    const lvl = checked ? checked.value : 'public';
+    const opts = document.querySelectorAll(`#modAccessList .mod-acc-row[data-module="${moduleId}"] .mod-acc-opt`);
+    opts.forEach(o => {
+        o.classList.remove('sel-public','sel-login','sel-admin','sel-selected');
+        if (o.querySelector('input').checked) o.classList.add('sel-' + lvl);
+    });
+    const box = document.getElementById('macu-' + moduleId);
+    if (box) box.classList.toggle('show', lvl === 'selected');
+}
+function saveModuleAccess(btn) {
+    const access = [];
+    document.querySelectorAll('#modAccessList .mod-acc-row').forEach(row => {
+        const mid = row.dataset.module;
+        const checked = row.querySelector('input[type=radio]:checked');
+        const lvl = checked ? checked.value : 'public';
+        let allowed = [];
+        if (lvl === 'selected') {
+            allowed = Array.from(row.querySelectorAll('.macu-cb:checked')).map(cb => cb.value);
+            if (allowed.length === 0) { alert(`模块「${mid}」设为「选择用户可看」时至少选择一名用户`); return; }
+        }
+        access.push({ module_id: mid, min_level: lvl, allowed_users: allowed });
+    });
+    umRequest('/config/api/module_access/save', JSON.stringify({ access: access }), {
+        btn: btn, busyText: '保存中…', reload: true
+    });
+}
+</script>
+{% endblock %}

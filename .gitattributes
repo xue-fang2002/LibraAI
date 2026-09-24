@@ -1,0 +1,17 @@
+# 换行统一：仓库内一律按 LF 存储，Windows 检出时自动转 CRLF
+* text=auto
+
+# 以下明确标记为二进制，任何情况下都不做换行/编码转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.bmp binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.db binary
+*.gguf binary
+*.safetensors binary
+*.bin binary
+*.faiss binary

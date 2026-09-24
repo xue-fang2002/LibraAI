@@ -1,0 +1,1277 @@
+/* ================================================================
+   chart.css — 图表模块样式（统一工具箱新拟态风格）
+   参照 style.css 变量体系与视觉语言，保持所有功能逻辑不变
+   ================================================================ */
+
+/* ---------- 变量定义（与 style.css 保持一致） ---------- */
+.chart-page {
+  --bg: #e0e5ec;
+  --bg-dark: #1a1d23;
+  --text: #4a5568;
+  --text-dark: #a0aec0;
+  --text-heading: #2d3748;
+  --text-heading-dark: #e2e8f0;
+  --primary: #6d5dfc;
+  --primary-light: #8b80ff;
+  --text-primary: #4a5568;
+  --border-color: #cfd4dc;
+  --shadow-light: #ffffff;
+  --shadow-dark: #b8b9be;
+  --shadow-dark-dk: #0f1115;
+  --shadow-light-dk: #2a2e36;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-lg: 20px;
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 暗色模式（与 style.css 保持一致）——layout_base.js 用 body.dark */
+body.dark .chart-page,
+[data-theme="dark"] .chart-page {
+  --bg: #1a1d23;
+  --text: #a0aec0;
+  --text-heading: #e2e8f0;
+  --shadow-light: #2a2e36;
+  --shadow-dark: #0f1115;
+  --text-primary: #e2e8f0;
+  --border-color: #3a4150;
+}
+
+/* 灯光主题桥接：仅黑夜模式内容区主色跟随展厅灯光。
+   注意：主题色（量子主题 = 霓虹青 #00f0ff）原样拿来做文字/强调色过亮刺眼，
+   这里向中性灰混合做柔和化，保留主题识别度但不再扎眼；
+   同时给出 --surface-btn（比页面底色略亮的台面色），避免按钮与 #1a1d23 页面同色而显成一坨黑。 */
+body.dark .chart-page {
+  --primary: color-mix(in srgb, var(--theme-primary) 44%, #b6c2d0);
+  --primary-light: color-mix(in srgb, var(--theme-secondary) 44%, #b6c2d0);
+  --surface-btn: #262d38;
+}
+
+/* 黑夜模式下按钮/胶囊统一改用台面色（不是纯黑） */
+body.dark .chart-page .ct-type,
+body.dark .chart-page .ct-cat.active,
+body.dark .chart-page .ct-fchip,
+body.dark .chart-page .ct-tool,
+body.dark .chart-page .ct-switch,
+body.dark .chart-page .ct-ychip,
+body.dark .chart-page .ct-btn-primary,
+body.dark .chart-page .ct-btn-ghost {
+  background: var(--surface-btn);
+}
+
+/* 选中 chip 原本的霓虹光晕在暗色下过亮，收敛为柔和投影 */
+body.dark .chart-page .ct-fchip.active {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+/* 5 套明亮主题桥接：图表 UI 强调色（按钮/选中态/激活 pill）跟随展厅灯光主题色。
+   仅作用于浅色模式——黑夜模式由下方 body.dark .chart-page 的柔和化版本接管，
+   否则 data-light-theme 在暗色下同样命中会把霓虹青绿原样带回（刺眼）。 */
+body:not(.dark)[data-light-theme] .chart-page {
+  --primary: var(--theme-primary);
+  --primary-light: var(--theme-secondary);
+}
+/* silver 主题主色为浅银灰，UI 强调态（选中/激活）改用更深的 slate 保证可读 */
+body:not(.dark)[data-light-theme="silver"] .chart-page {
+  --primary: #94a3b8;
+  --primary-light: #64748b;
+}
+
+/* ---------- 全局重置 ---------- */
+.chart-page {
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  padding: 8px 12px 12px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  min-height: 400px;
+  position: relative;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.chart-page * {
+  box-sizing: border-box;
+}
+
+/* ---------- 工具类：凸起 ---------- */
+.tb-raised {
+  background: var(--bg);
+  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  border-radius: var(--radius);
+  transition: var(--transition);
+}
+
+.tb-raised:hover {
+  box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+  transform: translateY(-2px);
+}
+
+/* ---------- 工具类：凹陷 ---------- */
+.tb-inset {
+  background: var(--bg);
+  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+  border-radius: var(--radius);
+}
+
+/* ---------- 工具类：激活（凹陷 + 强调色） ---------- */
+.tb-active-inset {
+  background: var(--bg);
+  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+  border-radius: var(--radius);
+  color: var(--primary);
+}
+
+/* ================================================================
+   1. 顶部工具栏
+   ================================================================ */
+.ct-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 6px 2px 14px;
+}
+
+.ct-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--text-heading);
+}
+
+/* 上传按钮（风格统一） */
+.ct-type {
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 50px;
+  padding: 9px 20px;
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  transition: var(--transition);
+}
+.ct-type:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  color: var(--primary);
+}
+.ct-type:active {
+  transform: translateY(0);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+
+/* ================================================================
+   2. 大类标签栏（新拟态分段胶囊栏）
+   ================================================================ */
+.ct-cats {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 50px;
+  background: var(--bg);
+  box-shadow: inset 2px 2px 5px var(--shadow-dark), inset -2px -2px 5px var(--shadow-light);
+}
+
+.ct-cat {
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  background: transparent;
+  border-radius: 50px;
+  padding: 9px 20px;
+  transition: var(--transition);
+  letter-spacing: 0.3px;
+}
+
+.ct-cat:hover {
+  color: var(--primary);
+  background: rgba(109, 93, 252, 0.06);
+}
+
+.ct-cat.active {
+  color: var(--primary);
+  font-weight: 700;
+  background: var(--bg);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+
+/* ================================================================
+   3. 筛选条（二级分类 Pill）
+   ================================================================ */
+.ct-filterbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 4px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: transparent;
+  border-radius: var(--radius);
+}
+
+.ct-fchip {
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 50px;
+  padding: 6px 16px;
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  transition: var(--transition);
+}
+
+.ct-fchip:hover {
+  transform: translateY(-1px);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+}
+
+.ct-fchip.active {
+  background: var(--primary);
+  color: #0b0e14;
+  box-shadow: 0 0 12px var(--theme-glow-soft);
+  font-weight: 600;
+}
+
+/* ================================================================
+   4. 图表展示区
+   ================================================================ */
+.ct-chart-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 6px;
+}
+
+/* ================================================================
+   5. 左右分栏
+   ================================================================ */
+.ct-main {
+  display: flex;
+  gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ---------- 左侧缩略图列表 ---------- */
+.ct-sublist {
+  flex: 0 0 390px;
+  overflow-y: auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 14px;
+  align-content: start;
+  padding: 6px 4px 10px 2px;
+  background: transparent;
+}
+
+/* 二级分组标题 */
+.ct-group-title {
+  grid-column: 1 / -1;
+  margin: 6px 2px 0;
+  padding: 4px 16px;
+  align-self: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text);
+  opacity: 0.6;
+  background: var(--bg);
+  border-radius: 50px;
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+  justify-self: start;
+}
+
+/* 缩略图卡片 */
+.ct-thumb {
+  background: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  transition: var(--transition);
+}
+
+.ct-thumb:hover {
+  transform: translateY(-3px);
+  box-shadow: 7px 7px 14px var(--shadow-dark), -7px -7px 14px var(--shadow-light);
+}
+
+.ct-thumb.active {
+  box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+  transform: translateY(0);
+  border: none;
+}
+
+.ct-thumb-canvas {
+  width: 100%;
+  height: 132px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  box-shadow: inset 1px 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.ct-thumb-title {
+  font-size: 12px;
+  text-align: center;
+  margin-top: 8px;
+  color: var(--text-heading);
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+/* ---------- 右侧主预览 ---------- */
+.ct-preview-pane {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: transparent;
+  border-radius: var(--radius);
+}
+
+/* 预览头部 */
+.ct-preview-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 6px 4px 12px;
+  border-bottom: none;
+  background: transparent;
+}
+
+.ct-preview-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-heading);
+  flex: 1 1 auto;
+}
+
+/* 切换开关 */
+.ct-toggles {
+  display: flex;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.ct-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--bg);
+  padding: 5px 14px;
+  border-radius: 50px;
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  transition: var(--transition);
+}
+
+.ct-switch:hover {
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+}
+
+.ct-switch:active {
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+}
+
+/* 工具按钮 */
+.ct-tool {
+  border: none;
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 50px;
+  padding: 5px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  transition: var(--transition);
+}
+
+.ct-tool:hover {
+  transform: translateY(-2px);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+}
+
+.ct-tool:active {
+  transform: translateY(0);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+
+/* 主预览画布（凹陷） */
+.ct-preview-canvas {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 220px;
+  height: auto;
+  margin-top: 6px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-light);
+  padding: 10px;
+  transition: box-shadow 0.3s ease;
+}
+
+/* 迷你数据表（凸起） */
+.ct-maintable {
+  flex: 0 0 auto;
+  min-height: 0;
+  margin-top: 12px;
+  max-height: 220px;
+  overflow: auto;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--bg);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  transition: box-shadow 0.3s ease;
+}
+
+.ct-maintable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ct-maintable th,
+.ct-maintable td {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 5px 12px;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--text-heading);
+}
+
+.ct-maintable th {
+  background: rgba(0, 0, 0, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-weight: 600;
+  color: var(--text);
+}
+
+[data-theme="dark"] .ct-maintable th {
+  background: rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] .ct-maintable td {
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+/* ================================================================
+   6. 全屏模式
+   ================================================================ */
+.ct-preview-pane:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  background: var(--bg);
+  border: none;
+  border-radius: 0;
+}
+
+.ct-preview-pane:fullscreen .ct-preview-canvas {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  border-radius: var(--radius);
+}
+
+.ct-preview-pane:fullscreen .ct-maintable {
+  max-height: 30vh;
+}
+
+/* ================================================================
+   7. 底部配置面板
+   ================================================================ */
+.ct-config {
+  background: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  margin-top: 8px;
+  overflow: hidden;
+  transition: box-shadow 0.3s ease;
+}
+
+.ct-config-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading);
+  background: var(--bg);
+  border-bottom: none;
+  transition: background 0.2s ease;
+}
+
+.ct-config-head:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.ct-caret {
+  display: inline-block;
+  transition: transform 0.25s ease;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.ct-config.collapsed .ct-caret {
+  transform: rotate(-90deg);
+}
+
+.ct-fname {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.ct-config-body {
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: var(--bg);
+  border-top: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.ct-config.collapsed .ct-config-body {
+  display: none;
+}
+
+/* 配置字段 */
+.ct-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-heading);
+}
+
+.ct-field > label {
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.ct-field select {
+  border: none;
+  background: var(--bg);
+  color: var(--text-heading);
+  border-radius: 50px;
+  padding: 6px 14px;
+  font-size: 13px;
+  box-shadow: inset 2px 2px 6px var(--shadow-dark), inset -2px -2px 6px var(--shadow-light);
+  outline: none;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+.ct-field select:focus {
+  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
+}
+
+select#xAxisSelect {
+  min-width: 120px;
+}
+
+/* Y轴多选 chips */
+.ct-ychips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ct-ychip {
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 50px;
+  padding: 5px 15px;
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+  transition: var(--transition);
+}
+
+.ct-ychip:hover {
+  transform: translateY(-1px);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+}
+
+.ct-ychip.on {
+  background: var(--primary);
+  color: #0b0e14;
+  box-shadow: 0 0 12px var(--theme-glow-soft);
+  font-weight: 600;
+}
+
+/* 配置面板内的数据预览（凹陷） */
+.ct-preview {
+  width: 100%;
+  max-height: 260px;
+  overflow: auto;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 8px;
+  box-shadow: inset 3px 3px 8px var(--shadow-dark), inset -3px -3px 8px var(--shadow-light);
+}
+
+.ct-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ct-preview th,
+.ct-preview td {
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 4px 10px;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--text-heading);
+}
+
+.ct-preview th {
+  background: rgba(0, 0, 0, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-weight: 600;
+  color: var(--text);
+}
+
+[data-theme="dark"] .ct-preview th {
+  background: rgba(255, 255, 255, 0.04);
+}
+[data-theme="dark"] .ct-preview td {
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+/* ================================================================
+   8. 上传弹窗（参照 style.css 风格）
+   ================================================================ */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.modal-mask.show {
+  display: flex;
+}
+
+.modal {
+  background: var(--bg);
+  color: var(--text-heading);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px 28px;
+  width: min(480px, 92vw);
+  box-shadow: 12px 16px 40px rgba(0, 0, 0, 0.15), -6px -6px 20px var(--shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="dark"] .modal {
+  box-shadow: 12px 16px 40px rgba(0, 0, 0, 0.45), -6px -6px 20px rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.modal h3 {
+  margin: 0 0 18px;
+  color: var(--text-heading);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+/* 拖拽区 — 凹陷 */
+.ct-drop {
+  border: 2px dashed transparent;
+  border-radius: var(--radius);
+  padding: 30px 18px;
+  text-align: center;
+  color: var(--text);
+  background: var(--bg);
+  box-shadow: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-light);
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.ct-drop.dragover {
+  border-color: var(--primary-light);
+  box-shadow: inset 4px 4px 10px var(--shadow-dark), inset -4px -4px 10px var(--shadow-light),
+              0 0 0 2px var(--primary-light);
+}
+
+.ct-drop p {
+  margin: 6px 0;
+}
+
+.ct-muted {
+  color: var(--text);
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+.ct-link {
+  border: none;
+  background: none;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 13px;
+  padding: 0;
+}
+
+.ct-link:hover {
+  color: var(--primary-light);
+}
+
+.ct-drop-info {
+  margin: 14px 0 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text-heading);
+  font-size: 13px;
+  box-shadow: inset 2px 2px 6px var(--shadow-dark), inset -2px -2px 6px var(--shadow-light);
+}
+
+/* 弹窗按钮 */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.ct-btn-primary,
+.ct-btn-ghost {
+  border: none;
+  border-radius: 50px;
+  padding: 8px 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: var(--transition);
+  background: var(--bg);
+}
+
+.ct-btn-primary {
+  background: var(--bg);
+  color: var(--primary);
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+}
+
+.ct-btn-primary:hover:not(:disabled) {
+  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  transform: translateY(-2px);
+}
+
+.ct-btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+
+.ct-btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.ct-btn-ghost {
+  color: var(--text);
+  box-shadow: 4px 4px 8px var(--shadow-dark), -4px -4px 8px var(--shadow-light);
+}
+
+.ct-btn-ghost:hover {
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+}
+
+.ct-btn-ghost:active {
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+
+/* ================================================================
+   9. 空状态
+   ================================================================ */
+.ct-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text);
+  text-align: center;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: inset 4px 4px 12px var(--shadow-dark), inset -4px -4px 12px var(--shadow-light);
+  margin: 4px 0;
+  padding: 32px 20px;
+}
+
+.ct-empty-icon {
+  font-size: 44px;
+  opacity: 0.5;
+}
+
+.ct-empty p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+/* ================================================================
+   10. 上传按钮（独立 #uploadBtn）
+   ================================================================ */
+#uploadBtn {
+  border: none;
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 50px;
+  padding: 9px 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+  transition: var(--transition);
+}
+
+#uploadBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  color: var(--primary);
+}
+
+#uploadBtn:active {
+  transform: translateY(0);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+
+/* ================================================================
+   11. 暗色模式微调
+   ================================================================ */
+[data-theme="dark"] .ct-config-head:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .ct-config-body {
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .ct-drop {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-drop-info {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-switch {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-tool {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-preview-canvas {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-maintable {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-config {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-config-head {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-config-body {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-preview {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-thumb-canvas {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-empty {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .ct-cat {
+  color: var(--text);
+}
+
+[data-theme="dark"] .ct-cat.active {
+  background: var(--primary);
+  color: #0b0e14;
+}
+
+[data-theme="dark"] .ct-fchip {
+  color: var(--text);
+}
+
+[data-theme="dark"] .ct-fchip.active {
+  background: var(--primary);
+  color: #0b0e14;
+}
+
+[data-theme="dark"] .ct-ychip {
+  color: var(--text);
+}
+
+[data-theme="dark"] .ct-ychip.on {
+  background: var(--primary);
+  color: #0b0e14;
+}
+
+[data-theme="dark"] .ct-title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .ct-preview-title {
+  color: var(--text-heading);
+}
+
+[data-theme="dark"] .ct-group-title {
+  color: var(--text);
+}
+
+[data-theme="dark"] .ct-thumb-title {
+  color: var(--text-heading);
+}
+
+/* ================================================================
+   12. 滚动条美化
+   ================================================================ */
+.ct-sublist::-webkit-scrollbar,
+.ct-preview-pane::-webkit-scrollbar,
+.ct-maintable::-webkit-scrollbar,
+.ct-preview::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.ct-sublist::-webkit-scrollbar-track,
+.ct-preview-pane::-webkit-scrollbar-track,
+.ct-maintable::-webkit-scrollbar-track,
+.ct-preview::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ct-sublist::-webkit-scrollbar-thumb,
+.ct-preview-pane::-webkit-scrollbar-thumb,
+.ct-maintable::-webkit-scrollbar-thumb,
+.ct-preview::-webkit-scrollbar-thumb {
+  background: var(--shadow-dark);
+  border-radius: 999px;
+  opacity: 0.4;
+}
+
+.ct-sublist::-webkit-scrollbar-thumb:hover,
+.ct-preview-pane::-webkit-scrollbar-thumb:hover,
+.ct-maintable::-webkit-scrollbar-thumb:hover,
+.ct-preview::-webkit-scrollbar-thumb:hover {
+  opacity: 0.8;
+}
+
+/* ================================================================
+   13. 响应式适配
+   ================================================================ */
+@media (max-width: 820px) {
+  .ct-main {
+    flex-direction: column;
+  }
+  .ct-sublist {
+    flex: 0 0 auto;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .ct-preview-pane {
+    min-height: 380px;
+  }
+  .ct-preview-canvas {
+    min-height: 180px;
+  }
+  .ct-toolbar {
+    gap: 10px;
+  }
+  .ct-cats {
+    gap: 8px;
+  }
+  .ct-cat {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  .ct-config-body {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ct-field {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .ct-sublist {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
+  .ct-thumb-canvas {
+    height: 100px;
+  }
+  .ct-preview-head {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .ct-toggles {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .modal {
+    padding: 18px 16px 20px;
+  }
+  .ct-drop {
+    padding: 20px 12px;
+  }
+}
+
+/* ================================================================
+   14. 画布内部自适应
+   ================================================================ */
+.ct-thumb-canvas canvas,
+.ct-preview-canvas canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+/* ================================================================
+   15. 其他辅助
+   ================================================================ */
+button,
+.ct-cat,
+.ct-fchip,
+.ct-thumb,
+.ct-switch,
+.ct-tool,
+.ct-ychip,
+.ct-type,
+#uploadBtn,
+.ct-btn-primary,
+.ct-btn-ghost {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ================================================================
+   16. AI 出图抽屉（独立通道，不耦合 ECharts 手动工具）
+   ================================================================ */
+/* 触发按钮强调色跟随主题 */
+.ct-type-ai {
+  color: var(--primary);
+}
+
+/* 遮罩：仅覆盖图表区，不影响页面其它部分 */
+.ct-ai-mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(20, 26, 38, 0.28);
+  z-index: 40;
+  border-radius: var(--radius);
+}
+
+/* 右侧抽屉 */
+.ct-ai-dock {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 380px;
+  max-width: 92%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 18px 22px;
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: -8px 0 24px var(--shadow-dark), 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+  z-index: 50;
+  transform: translateX(102%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+.ct-ai-dock.open {
+  transform: translateX(0);
+}
+
+.ct-ai-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ct-ai-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading, var(--text));
+}
+.ct-ai-x {
+  border: none;
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  transition: var(--transition);
+}
+.ct-ai-x:active {
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+}
+.ct-ai-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  opacity: 0.78;
+  margin: 0;
+}
+.ct-ai-text {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  font-size: 13px;
+  color: var(--text-heading, var(--text));
+  background: var(--bg);
+  box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light);
+  outline: none;
+}
+.ct-ai-text:focus {
+  box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light), 0 0 0 2px var(--primary-light, var(--primary));
+}
+.ct-ai-gen {
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: var(--primary);
+  border-radius: 50px;
+  padding: 11px 18px;
+  box-shadow: 4px 4px 9px var(--shadow-dark), -4px -4px 9px var(--shadow-light);
+  transition: var(--transition);
+}
+.ct-ai-gen:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+.ct-ai-gen:active {
+  transform: translateY(0);
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.25);
+}
+.ct-ai-status {
+  font-size: 12px;
+  min-height: 16px;
+  color: var(--text);
+}
+.ct-ai-status-ok { color: #2f9e6f; }
+.ct-ai-status-err { color: #e0533d; }
+.ct-ai-spec {
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light);
+  padding: 10px 12px;
+}
+.ct-ai-spec-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+.ct-ai-spec-json {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+}
+.ct-ai-imgwrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.ct-ai-img {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  box-shadow: 4px 4px 10px var(--shadow-dark), -4px -4px 10px var(--shadow-light);
+}
+.ct-ai-dl {
+  align-self: center;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: var(--primary);
+  border-radius: 50px;
+  padding: 8px 18px;
+  box-shadow: 4px 4px 9px var(--shadow-dark), -4px -4px 9px var(--shadow-light);
+}
+.ct-ai-dl:active {
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.25);
+}

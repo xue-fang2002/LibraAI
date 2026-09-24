@@ -1,0 +1,16 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}无访问权限{% endblock %}
+
+{% block content %}
+<div class="wf-page">
+  <div class="wf-empty" style="padding:80px 20px;">
+    <div style="font-size:48px;margin-bottom:12px;">🔒</div>
+    <h2 style="margin:0 0 8px;">无权访问「工作自动化流程」</h2>
+    <p style="color:#6b7280;font-size:13px;max-width:460px;margin:0 auto;">
+      该模块仅对公司内部授权角色开放。如需使用，请联系管理员在
+      <b>配置中心 → 模块访问权限</b> 中为你开通「工作自动化流程」的访问权限。
+    </p>
+  </div>
+</div>
+{% endblock %}

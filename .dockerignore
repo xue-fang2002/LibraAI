@@ -1,0 +1,46 @@
+# 构建上下文排除项：让镜像里只有代码，不带本地数据与私有文件
+.git
+.github
+.workbuddy
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# 运行期数据（全部走卷，绝不进镜像）
+book_manager.db
+*.db
+*.db-wal
+*.db-shm
+uploads/
+models/
+vector_data/
+ai_vector_store/
+db_export/
+temp/
+logs/
+.rundata/
+
+# 本地素材与临时产物
+_shots/
+_cleanup/
+_pw_browsers/
+_diag/
+*.log
+
+# 真实配置与凭据
+config/modules.yaml
+config/.secret_key
+config/.init_admin_pwd
+
+# 个人资料
+interview_prep/
+
+# 私有业务流程（框架已开源，私有流程不入库也不进镜像）
+modules/toolbox/automation/flows/*.py
+!modules/toolbox/automation/flows/__init__.py
+!modules/toolbox/automation/flows/example_flow.py

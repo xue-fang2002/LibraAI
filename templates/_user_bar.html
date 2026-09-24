@@ -1,0 +1,14 @@
+{# ========== 登录用户 user-bar（右侧头像 + 用户名 + 下拉菜单） ========== #}
+{# 菜单直接复用 _user_menu.html（.user-menu-item 独立类选择器）， #}
+{# 这样菜单被 JS portal 到 <body> 下时样式依然生效（不能依赖 .bm-ws .user-bar 后代选择器）。 #}
+{# 参数：menu_id (必填)：下拉菜单 DOM id，必须全局唯一 #}
+{% if current_user %}
+<div class="user-bar">
+    <span class="user-name">{{ current_user.name or current_user.account }}</span>
+    <div class="user-avatar" data-user-bar-trigger="{{ menu_id }}" role="button" tabindex="0" aria-haspopup="true">
+        <span style="font-size:18px;">📖</span>
+        <div class="tooltip">{{ current_user.name or current_user.account }}</div>
+    </div>
+</div>
+{% include '_user_menu.html' %}
+{% endif %}

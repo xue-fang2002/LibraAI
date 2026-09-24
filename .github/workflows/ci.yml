@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------- 编译门禁 + 启动冒烟 ----------------
+  smoke:
+    name: 编译门禁 + 启动冒烟
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 准备 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-core.txt
+
+      - name: 安装系统依赖（OCR 引擎 + OpenCV 运行库，与镜像保持一致）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends tesseract-ocr libgl1 libglib2.0-0
+
+      - name: 安装核心依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-core.txt
+
+      - name: 语法编译门禁
+        run: python -m compileall -q app.py runbook.py core common modules
+
+      - name: 静态检查（pyflakes，仅提示不阻断）
+        continue-on-error: true
+        run: |
+          pip install pyflakes
+          python -m pyflakes app.py core common modules || true
+
+      - name: 启动服务并冒烟 /api/health
+        run: |
+          python app.py > /tmp/app.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:5005/api/health > /tmp/health.json; then
+              echo "HEALTH_OK"
+              cat /tmp/health.json
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "SERVICE_NOT_READY"
+          cat /tmp/app.log
+          exit 1
+
+      - name: 失败时上传启动日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-startup-log
+          path: /tmp/app.log
+
+  # ---------------- 镜像可构建性验证 ----------------
+  docker-build:
+    name: Docker 镜像构建验证
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # PR 阶段跳过，避免每次都跑耗时构建；推送到主分支时才验证
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 构建镜像（仅核心依赖）
+        run: docker build -t libraai:ci .
+
+      - name: 容器冒烟
+        run: |
+          docker run -d --name libraai_ci -p 5005:5005 libraai:ci
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:5005/api/health; then
+              echo "CONTAINER_HEALTH_OK"
+              docker rm -f libraai_ci
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "CONTAINER_NOT_READY"
+          docker logs libraai_ci
+          docker rm -f libraai_ci
+          exit 1

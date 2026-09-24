@@ -1,0 +1,154 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}分类管理 - 网站导航{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='nav_hub/style.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="nav-hub-container">
+  <!-- 顶部控制栏 -->
+  <div class="nav-hub-topbar">
+    <div style="font-size: 18px; font-weight: 700; color: var(--nav-text-title);">
+      📂 分类管理
+    </div>
+    <div class="nav-hub-actions">
+      <a href="{{ url_for('nav_hub.index') }}" class="nav-hub-btn nav-hub-btn--ghost">
+        ← 返回导航
+      </a>
+      <button class="nav-hub-btn nav-hub-btn--primary" onclick="NavHub.openCatModal()">
+        + 添加分类
+      </button>
+    </div>
+  </div>
+
+  <!-- 分类列表 -->
+  <div id="navHubCatList">
+    <div class="nav-hub-loading">
+      <div class="nav-hub-spinner"></div>
+      <span>加载分类中...</span>
+    </div>
+  </div>
+</div>
+
+<!-- 添加/编辑分类弹窗 -->
+<div class="nav-hub-modal-overlay" id="navHubCatModal" onclick="NavHub.closeModalOnOverlay(event, '#navHubCatModal')">
+  <div class="nav-hub-modal" onclick="event.stopPropagation()">
+    <div class="nav-hub-modal-header">
+      <div class="nav-hub-modal-title" id="navHubCatModalTitle">➕ 添加分类</div>
+      <button class="nav-hub-modal-close" onclick="NavHub.closeModal('#navHubCatModal')">×</button>
+    </div>
+    <div class="nav-hub-modal-body">
+      <form id="navHubCatForm">
+        <div class="nav-hub-form-row">
+          <label class="nav-hub-form-label">分类名称 *</label>
+          <input type="text" name="name" class="nav-hub-form-input" placeholder="如：AI 工具" required>
+        </div>
+        <div class="nav-hub-form-row">
+          <label class="nav-hub-form-label">图标 Emoji</label>
+          <input type="text" name="icon" class="nav-hub-form-input" placeholder="如：🤖（留空则使用默认图标）">
+          <div class="nav-hub-form-hint">建议使用一个 Emoji 作为分类图标</div>
+        </div>
+        <div class="nav-hub-form-row">
+          <label class="nav-hub-form-label">排序权重</label>
+          <input type="number" name="sort_order" class="nav-hub-form-input" value="0" style="width:120px">
+          <div class="nav-hub-form-hint">数字越小排序越靠前</div>
+        </div>
+      </form>
+    </div>
+    <div class="nav-hub-modal-footer">
+      <button class="nav-hub-btn nav-hub-btn--ghost" onclick="NavHub.closeModal('#navHubCatModal')">取消</button>
+      <button class="nav-hub-btn nav-hub-btn--primary" onclick="NavHub.saveCategory()">💾 保存</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.NAV_HUB_CONFIG = {
+    apiBase: "{{ url_for('nav_hub.index') }}",
+    canManage: true
+  };
+</script>
+<script src="{{ url_for('static', filename='nav_hub/script.js') }}"></script>
+<script>
+(function() {
+  'use strict';
+
+  // 分类管理页专用渲染
+  function renderCatManageList() {
+    const container = document.getElementById('navHubCatList');
+    if (!container) return;
+
+    const cats = window.NavHub.loadCategories ? [] : (window.allCategories || []);
+    // 从 NavHub 模块获取分类数据
+    const allCats = (typeof NavHub !== 'undefined' && NavHub._cats) ? NavHub._cats : [];
+
+    // 由于 NavHub 模块内部没有直接暴露 allCategories，我们通过重新加载来渲染
+    fetch("{{ url_for('nav_hub.index') }}/api/categories", {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.code !== 200) {
+        container.innerHTML = '<div class="nav-hub-empty"><span class="emoji">⚠️</span><p>加载失败，请刷新重试</p></div>';
+        return;
+      }
+      const list = res.data.list || [];
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="nav-hub-empty">
+            <span class="emoji">📂</span>
+            <p>暂无分类</p>
+            <button class="nav-hub-btn nav-hub-btn--primary" onclick="NavHub.openCatModal()">+ 添加第一个分类</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = `
+        <div class="nav-hub-cat-grid">
+          ${list.map(cat => `
+            <div class="nav-hub-cat-card">
+              <div class="nav-hub-cat-info">
+                <div class="nav-hub-cat-icon">${cat.icon || '📂'}</div>
+                <div style="min-width:0;">
+                  <div class="nav-hub-cat-name">${escapeHtml(cat.name)}</div>
+                  <div class="nav-hub-cat-sort">排序: ${cat.sort_order || 0}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-shrink:0;">
+                <button class="nav-hub-icon-btn" title="编辑" onclick="NavHub.editCat(${cat.id})">✏️</button>
+                <button class="nav-hub-icon-btn" title="删除" onclick="NavHub.deleteCat(${cat.id})">🗑️</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    })
+    .catch(() => {
+      container.innerHTML = '<div class="nav-hub-empty"><span class="emoji">⚠️</span><p>加载失败，请刷新重试</p></div>';
+    });
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // 页面加载完成后渲染
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderCatManageList);
+  } else {
+    renderCatManageList();
+  }
+
+  // 暴露到全局供弹窗关闭后刷新
+  window.renderCatManageList = renderCatManageList;
+})();
+</script>
+{% endblock %}

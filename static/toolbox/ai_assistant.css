@@ -1,0 +1,224 @@
+/* ================================================================
+   AI 工具助手（Phase 3）— 新拟态，复用 toolbox 变量体系
+   ================================================================ */
+.aa-fab {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 1500;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: var(--primary);
+  border-radius: 50px;
+  padding: 12px 20px;
+  box-shadow: 5px 5px 12px var(--shadow-dark), -5px -5px 12px var(--shadow-light);
+  transition: var(--transition);
+}
+.aa-fab:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+.aa-fab:active {
+  transform: translateY(0);
+  box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.aa-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 26, 38, 0.35);
+}
+
+.aa-modal {
+  width: 580px;
+  max-width: 92vw;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px 20px;
+  background: var(--bg);
+  color: var(--text);
+  border-radius: var(--radius, 16px);
+  box-shadow: 8px 8px 18px var(--shadow-dark), -8px -8px 18px var(--shadow-light);
+  overflow-y: auto;
+}
+
+/* 暗色：仅弹窗跟随（layout_base.js 用 body.dark），不影响工具箱其它区域 */
+body.dark .aa-modal {
+  --bg: #1a1d23;
+  --text: #a0aec0;
+  --text-heading: #e2e8f0;
+  --shadow-light: #2a2e36;
+  --shadow-dark: #0f1115;
+}
+
+.aa-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.aa-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+.aa-x {
+  border: none;
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--text);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  box-shadow: 3px 3px 6px var(--shadow-dark), -3px -3px 6px var(--shadow-light);
+  transition: var(--transition);
+}
+.aa-x:active {
+  box-shadow: inset 2px 2px 4px var(--shadow-dark), inset -2px -2px 4px var(--shadow-light);
+}
+.aa-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.78;
+}
+.aa-text {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  border: none;
+  border-radius: var(--radius-sm, 12px);
+  padding: 12px;
+  font-size: 13px;
+  color: var(--text-heading);
+  background: var(--bg);
+  box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light);
+  outline: none;
+}
+.aa-text:focus {
+  box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light),
+              0 0 0 2px var(--primary);
+}
+
+.aa-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.aa-btn {
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border-radius: 50px;
+  padding: 9px 18px;
+  box-shadow: 4px 4px 9px var(--shadow-dark), -4px -4px 9px var(--shadow-light);
+  transition: var(--transition);
+}
+.aa-btn:hover {
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+.aa-btn:active {
+  transform: translateY(0);
+  box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+.aa-btn.primary {
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: var(--primary);
+}
+
+.aa-status {
+  font-size: 12px;
+  min-height: 16px;
+  color: var(--text);
+}
+.aa-status-ok { color: #2f9e6f; }
+.aa-status-err { color: #e0533d; }
+
+/* 计划预览卡片 */
+.aa-plan {
+  border-radius: var(--radius-sm, 12px);
+  background: var(--bg);
+  box-shadow: inset 3px 3px 7px var(--shadow-dark), inset -3px -3px 7px var(--shadow-light);
+  padding: 12px 14px;
+}
+.aa-plan-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+.aa-reply {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.aa-tool {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 8px;
+}
+.aa-cat {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  opacity: 0.85;
+}
+.aa-params {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.aa-param {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text);
+}
+.aa-param b {
+  color: var(--text-heading);
+}
+.aa-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.aa-file {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--bg);
+  border-radius: 50px;
+  padding: 3px 10px;
+  box-shadow: 2px 2px 5px var(--shadow-dark), -2px -2px 5px var(--shadow-light);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aa-nofile {
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.65;
+}

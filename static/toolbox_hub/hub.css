@@ -1,0 +1,346 @@
+/* ============================================
+   工具箱 Hub - 新拟态 (Neumorphism) 外壳
+   只负责外壳与分类归组，不污染任何子模块内部样式
+   配色思路：页面底色略暗 + 卡片底色略亮 + 亮侧纯白不透明投影
+   ============================================ */
+
+:root {
+  --hub-page-bg: #dfe4ea;
+  --hub-card-bg: #e6ebf2;
+  --hub-text: #4a5568;
+  --hub-heading: #2d3748;
+  --hub-muted: #7b8494;
+  --hub-shadow-dark: #b8b9be;
+  --hub-shadow-light: #ffffff;
+  --hub-accent: #6d5dfc;
+  --hub-ok: #16a34a;
+  --hub-todo: #b7791f;
+  --hub-radius: 20px;
+  --hub-radius-sm: 14px;
+}
+
+/* 暗色模式（body.dark 由 layout_base.js 切换；同时兼容 [data-theme="dark"]） */
+body.dark,
+[data-theme="dark"] {
+  --hub-page-bg: #14171c;
+  --hub-card-bg: #1e222a;
+  --hub-text: #a0aec0;
+  --hub-heading: #e2e8f0;
+  --hub-muted: #7c8899;
+  --hub-shadow-dark: #0d0f13;
+  --hub-shadow-light: #2a2f39;
+  --hub-accent: var(--theme-primary, #6d5dfc);
+}
+
+/* ---------- 页面容器 ---------- */
+.hub-page {
+  min-height: 100%;
+  padding: 28px 32px 48px;
+  background: var(--hub-page-bg);
+  color: var(--hub-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  box-sizing: border-box;
+}
+.hub-page * { box-sizing: border-box; }
+
+/* ---------- 顶部标题 ---------- */
+.hub-hero {
+  margin-bottom: 26px;
+}
+.hub-hero-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--hub-heading);
+  margin: 0 0 6px;
+  letter-spacing: 0.5px;
+}
+.hub-hero-sub {
+  font-size: 13px;
+  color: var(--hub-muted);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ---------- 大区卡片网格 ---------- */
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 22px;
+}
+
+.hub-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 24px;
+  border-radius: var(--hub-radius);
+  background: var(--hub-card-bg);
+  box-shadow: 10px 10px 20px var(--hub-shadow-dark),
+             -10px -10px 20px var(--hub-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hub-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 14px 14px 26px var(--hub-shadow-dark),
+             -14px -14px 26px var(--hub-shadow-light);
+}
+.hub-card:active {
+  transform: translateY(0);
+  box-shadow: inset 6px 6px 12px var(--hub-shadow-dark),
+              inset -6px -6px 12px var(--hub-shadow-light);
+}
+
+.hub-card-icon {
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: var(--hub-card-bg);
+  box-shadow: inset 4px 4px 8px var(--hub-shadow-dark),
+              inset -4px -4px 8px var(--hub-shadow-light);
+}
+
+.hub-card-body { flex: 1; min-width: 0; }
+
+.hub-card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--hub-heading);
+  margin-bottom: 6px;
+}
+
+.hub-card-desc {
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--hub-muted);
+  margin-bottom: 12px;
+}
+
+.hub-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hub-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--hub-muted);
+  background: var(--hub-card-bg);
+  box-shadow: inset 2px 2px 5px var(--hub-shadow-dark),
+              inset -2px -2px 5px var(--hub-shadow-light);
+}
+.hub-badge.ok { color: var(--hub-ok); }
+.hub-badge.todo { color: var(--hub-todo); }
+
+.hub-card-arrow {
+  flex: 0 0 auto;
+  align-self: center;
+  font-size: 22px;
+  color: var(--hub-muted);
+}
+
+/* ---------- 子页签（文档处理区） ---------- */
+.hub-subtabs {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.hub-subtab {
+  padding: 11px 26px;
+  border: none;
+  border-radius: var(--hub-radius-sm);
+  background: var(--hub-card-bg);
+  box-shadow: 6px 6px 12px var(--hub-shadow-dark),
+             -6px -6px 12px var(--hub-shadow-light);
+  color: var(--hub-text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: box-shadow 0.2s ease, color 0.2s ease;
+}
+.hub-subtab.active {
+  color: var(--hub-accent);
+  box-shadow: inset 5px 5px 10px var(--hub-shadow-dark),
+              inset -5px -5px 10px var(--hub-shadow-light);
+}
+
+.hub-subpanel { display: none; }
+.hub-subpanel.active { display: block; }
+
+.hub-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--hub-heading);
+  margin: 4px 0 14px;
+}
+
+.hub-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.hub-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--hub-radius-sm);
+  background: var(--hub-card-bg);
+  box-shadow: 7px 7px 14px var(--hub-shadow-dark),
+             -7px -7px 14px var(--hub-shadow-light);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.hub-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 10px 10px 18px var(--hub-shadow-dark),
+             -10px -10px 18px var(--hub-shadow-light);
+}
+.hub-tile-icon { font-size: 20px; }
+.hub-tile-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--hub-heading);
+  font-weight: 500;
+}
+
+.hub-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: var(--hub-card-bg);
+  box-shadow: 5px 5px 10px var(--hub-shadow-dark),
+             -5px -5px 10px var(--hub-shadow-light);
+  color: var(--hub-muted);
+  font-size: 13px;
+  text-decoration: none;
+}
+.hub-back:hover { color: var(--hub-accent); }
+
+/* 内联变体：嵌入子模块自身工具栏/标题区时使用，不占独立一行 */
+.hub-back.inline { margin: 0; }
+
+.hub-note {
+  margin-top: 8px;
+  padding: 14px 18px;
+  border-radius: var(--hub-radius-sm);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--hub-muted);
+  box-shadow: inset 3px 3px 8px var(--hub-shadow-dark),
+              inset -3px -3px 8px var(--hub-shadow-light);
+}
+
+
+/* ============================================================
+   内联操作区：点击卡片后在当前页面下方展开，不跳转
+   （当前 Hub 首页卡片走跳转，此样式随 inline 逻辑一并保留，未启用）
+   ============================================================ */
+.hub-card.active {
+  transform: translateY(0);
+  box-shadow: inset 6px 6px 12px var(--hub-shadow-dark),
+              inset -6px -6px 12px var(--hub-shadow-light);
+}
+
+.hub-workspace {
+  display: none;
+  margin-top: 26px;
+  padding: 20px 22px 24px;
+  border-radius: var(--hub-radius);
+  background: var(--hub-card-bg);
+  box-shadow: inset 6px 6px 14px var(--hub-shadow-dark),
+              inset -6px -6px 14px var(--hub-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.hub-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.hub-workspace-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--hub-heading);
+  letter-spacing: 0.4px;
+}
+
+.hub-workspace-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.hub-workspace-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--hub-card-bg);
+  box-shadow: 4px 4px 8px var(--hub-shadow-dark),
+             -4px -4px 8px var(--hub-shadow-light);
+  color: var(--hub-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.hub-workspace-action:hover {
+  color: var(--hub-accent);
+  transform: translateY(-1px);
+}
+.hub-workspace-action:active {
+  box-shadow: inset 3px 3px 6px var(--hub-shadow-dark),
+              inset -3px -3px 6px var(--hub-shadow-light);
+}
+
+.hub-iframe-wrap {
+  width: 100%;
+  border-radius: var(--hub-radius-sm);
+  overflow: hidden;
+  background: var(--hub-page-bg);
+  box-shadow: 6px 6px 12px var(--hub-shadow-dark),
+             -6px -6px 12px var(--hub-shadow-light);
+}
+
+.hub-iframe {
+  display: block;
+  width: 100%;
+  min-height: 480px;
+  border: none;
+}
+
+/* 暗色模式补充 */
+body.dark .hub-workspace,
+[data-theme="dark"] .hub-workspace {
+  background: var(--hub-card-bg);
+}
+body.dark .hub-iframe-wrap,
+[data-theme="dark"] .hub-iframe-wrap {
+  background: #1a1d24;
+}
+

@@ -1,0 +1,476 @@
+{% extends "layout_base.html" %}
+{% block page_title %}{{ app_name }} - 图书资料库{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/book_neu.css') }}">
+<style>
+    /* ============ 图书馆首页 · 新拟态（scoped 到 .bm-ws，避免影响主框架侧边栏）
+       彩色只留给二级分类：按钮=淡彩底+深字，表格行=10% tint + 左侧 3px 实色条 ============ */
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "微软雅黑", sans-serif; }
+    /* 滚动条样式统一由全局 layout_base.css 提供（6px 细条） */
+
+    .bm-ws {
+        position: relative;
+        width: 100%;
+        height: 100%;               /* 固定高度：内部表格滚，界面不滚 */
+        display: flex; flex-direction: column;
+        background: var(--neu-bg); color: var(--neu-text); overflow: hidden;
+    }
+
+    /* 标题栏：品牌深蓝实心（新拟态凸起用同色系深浅阴影，不用灰阴影） */
+    .header-top {
+        background: var(--neu-brand-deep);
+        color: var(--neu-on-brand); text-align: center; padding: 14px; font-size: 22px; font-weight: bold;
+        flex-shrink: 0; display: flex; position: relative; z-index: 5;
+        justify-content: center; align-items: center; gap: 10px;
+    }
+    .div-line { height: 1px; background: rgba(222,228,236,0.5); flex-shrink: 0; }
+
+    .nav-top-bar {
+        background: var(--neu-toolbar); padding:10px 16px; display:flex; align-items:center;
+        flex-wrap:wrap; gap:12px; flex-shrink: 0;
+    }
+    .search-box { position: relative; display: flex; align-items: center; }
+    .search-box input {
+        width:220px; padding:8px 12px 8px 34px; border:1px solid var(--neu-border); border-radius:10px;
+        font-size:14px; outline:none; background: var(--neu-bg); color: var(--neu-text);
+        box-shadow: inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light);
+    }
+    .search-box input::placeholder { color: var(--neu-text-sub); }
+    .search-icon { position:absolute; left:11px; top:50%; transform:translateY(-50%);
+        font-size:14px; color: var(--neu-text-sub); cursor:pointer; z-index: 2; transition: color 0.18s ease; }
+    .search-icon:hover { color: var(--neu-accent); }
+
+    .first-nav {
+        display: flex; flex-wrap: wrap; gap: 8px;
+        padding: 6px 0;
+    }
+    /* 一级分类：蓝底工具栏上纯白文字（无按钮形状）；选中态=外边框括起来（不做按钮/内凹） */
+    .first-nav button {
+        background: transparent; color: var(--neu-on-brand); border: 1px solid transparent;
+        padding:7px 12px; font-size:14px; cursor:pointer; border-radius:8px;
+        box-shadow: none;
+        transition: all 0.18s ease;
+    }
+    .first-nav button:hover { color: #ffffff; opacity: 0.85; }
+    .first-nav button.active-c1 {
+        font-weight: bold; color: #ffffff;
+        background: var(--neu-brand-deep); border: 2px solid rgba(255,255,255,0.9);
+        box-shadow: none;
+    }
+    /* 一级导航栏上的「我的阅读」入口（独立于分类筛选，直接跳转） */
+    /* 个人视图入口用淡蓝底，与左侧「分类筛选」按钮区分开 */
+    .first-nav-tab-extra {
+        background: var(--neu-btn-bg); color: var(--neu-text); border: 1px solid var(--neu-border);
+        padding:7px 12px; font-size:14px; cursor:pointer; border-radius:10px;
+        text-decoration:none; display:inline-flex; align-items:center; gap:4px; white-space:nowrap;
+        box-shadow: none;
+        transition: all 0.18s ease;
+    }
+    .first-nav-tab-extra:hover { color: var(--neu-accent); text-decoration:none; }
+    .first-nav-tab-extra:active {
+        box-shadow: inset 3px 3px 6px var(--neu-shadow-dark), inset -3px -3px 6px var(--neu-shadow-light);
+    }
+    /* 「我的阅读 / 我的私有图书」为个人视图入口，与左侧分类筛选按钮用分隔线 + 右移分组明确区分（避免被误读为分类节点） */
+    .nav-personal-group { display:flex; align-items:center; gap:10px; margin-left:auto; }
+    .nav-divider { width:1px; height:24px; background: var(--neu-shadow-dark); opacity: 0.5; }
+    .nav-personal-label { color: var(--neu-on-brand); font-size:13px; padding:0 2px; user-select:none; opacity:0.85; }
+
+    .second-bar {
+        padding:10px 12px; display:flex; flex-wrap:wrap; gap:10px; flex-shrink: 0;
+        background: var(--neu-bg-accent); min-height: 48px;
+    }
+    .second-empty-tip { color: var(--neu-text-sub); padding: 8px; font-size: 14px; }
+    /* 二级分类按钮：底色由 JS 写入「分类色混白」的淡彩，文字用分类色深版（不再用白字） */
+    .second-btn {
+        border: 1px solid var(--neu-border); color: var(--neu-text); font-weight:bold;
+        padding:10px 18px; border-radius:10px; cursor:pointer; font-size: 14px;
+        box-shadow: 3px 3px 7px var(--neu-shadow-dark), -3px -3px 7px var(--neu-shadow-light);
+        transition: all 0.18s ease;
+    }
+    .second-btn:hover { transform: scale(1.04); }
+    /* 选中态：去掉内凹按压，改为「微小扩散的对应分类色光晕」+ 轻微放大 */
+    .second-btn.active-c2 {
+        transform: scale(1.06);
+        box-shadow: 0 0 12px 2px color-mix(in srgb, var(--c2-color, #6088bb) 50%, transparent),
+                    inset 0 0 0 1px color-mix(in srgb, var(--c2-color, #6088bb) 65%, transparent);
+    }
+    /* 暗色模式：工具栏按钮底色已提亮(--neu-btn-bg)，此处配更亮的浅阴影使其显出「凸起」而非黑块 */
+    body.dark .first-nav-tab-extra {
+        background: var(--neu-btn-bg);
+        color: var(--neu-on-brand);
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow: 3px 3px 7px #0d1014, -3px -3px 7px #3a4452;
+    }
+    body.dark .first-nav-tab-extra:hover { color: #ffffff; }
+    body.dark .search-icon { color: var(--neu-text-sub); }
+    body.dark .search-icon:hover { color: #ffffff; }
+    /* 暗色搜索框：内凹的深蓝场（非黑块），与蓝工具栏协调 */
+    body.dark .search-box input {
+        background: #1c2a40; color: var(--neu-text);
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow: inset 3px 3px 6px #0d1422, inset -3px -3px 6px #243650;
+    }
+    body.dark .search-box input::placeholder { color: var(--neu-text-sub); }
+
+    .table-wrap {
+        margin:10px; flex: 1; overflow-y: auto; border-radius: 12px; min-height: 0;
+        background: var(--neu-bg);
+        box-shadow: inset 4px 4px 8px var(--neu-shadow-dark), inset -4px -4px 8px var(--neu-shadow-light);
+    }
+    table { width:100%; border-collapse:collapse; }
+    table thead tr {
+        background: var(--neu-toolbar); height:34px; position: sticky; top: 0;
+        z-index: 10; box-shadow: 0 3px 6px var(--neu-shadow-dark);
+    }
+    th { padding:7px 10px; text-align:center; font-size:14px; font-weight: bold; white-space:nowrap; color: var(--neu-accent); }
+    table thead th { color: var(--neu-on-brand); }
+    td { padding:6px 10px; text-align:center; border-bottom: 1px solid var(--neu-bg-2);
+        height:28px; font-size:14px; white-space:nowrap; color: var(--neu-text); }
+    .name-cell { text-align:left; max-width: 500px; }
+    /* 行底色由 JS 写入「分类色 10% tint」+ 左侧 3px 实色条；hover 再叠一层极淡品牌色 */
+    tbody tr { transition: background 0.18s ease; }
+    tbody tr:hover { background-image: linear-gradient(0deg, var(--neu-accent-soft), var(--neu-accent-soft)); }
+    a { color: var(--neu-accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .name-text {
+        display: inline-block; max-width: 400px; white-space: nowrap;
+        overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+    }
+    .file-icon { margin-right: 7px; font-size: 16px; }
+    .action-btns { display:flex; gap:8px; align-items:center; justify-content:center; }
+    /* 操作按钮一律同色系凸起，把彩色让位给分类色，避免视觉打架 */
+    .action-btns button {
+        padding:4px 10px; border-radius:8px; cursor:pointer; font-size:12px;
+        background: var(--neu-bg); color: var(--neu-text); border: 1px solid var(--neu-border);
+        box-shadow: 2px 2px 5px var(--neu-shadow-dark), -2px -2px 5px var(--neu-shadow-light);
+        transition: all 0.18s ease;
+    }
+    .action-btns button:hover { color: var(--neu-accent); }
+    .action-btns button:active {
+        box-shadow: inset 2px 2px 4px var(--neu-shadow-dark), inset -2px -2px 4px var(--neu-shadow-light);
+    }
+    .empty-row td { text-align: center; padding: 40px; color: var(--neu-text-sub); font-size: 15px; }
+
+    @media (max-width: 768px) {
+        .header-top { font-size: 16px; padding: 10px; }
+        .nav-top-bar { padding: 8px; gap: 8px; }
+        .search-box input { width: 140px; padding: 6px 6px 6px 28px; font-size: 13px; }
+        .search-icon { left: 9px; font-size: 13px; }
+        .first-nav button { padding: 5px 8px; font-size: 12px; }
+        .second-bar { padding: 8px; gap: 6px; }
+        .second-btn { padding: 8px 12px; font-size: 12px; }
+        th { font-size: 12px; padding: 4px 6px; }
+        td { font-size: 12px; padding: 4px 6px; height: 36px; }
+        .name-cell { max-width: 200px; }
+        .name-text { max-width: 150px; }
+        .action-btns button { padding: 4px 6px; font-size: 11px; }
+        .file-icon { font-size: 14px; }
+    }
+    @media (max-width: 480px) {
+        .header-top { font-size: 14px; }
+        .search-box { width: 100%; }
+        .search-box input { width: 100%; }
+        .first-nav { width: 100%; }
+        .first-nav button { flex: 1; min-width: 60px; }
+        table { font-size: 11px; }
+        th:nth-child(2), td:nth-child(2),
+        th:nth-child(3), td:nth-child(3) { display: none; }
+        .action-btns { flex-direction: column; gap: 2px; }
+        .action-btns button { padding: 3px 6px; font-size: 10px; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bm-ws">
+    <div class="header-top">
+        <span>📚</span>
+        <span>图书资料库</span>
+    </div>
+    <div class="div-line"></div>
+    <div class="nav-top-bar">
+        <div class="search-box">
+            <span class="search-icon" onclick="doSearch()" title="搜索">🔍</span>
+            <input id="search-input" placeholder="搜索资料名称..." onkeydown="if(event.key==='Enter')doSearch()">
+        </div>
+        <div class="first-nav" id="first-nav-box"></div>
+        <div class="nav-personal-group">
+            <span class="nav-divider"></span>
+            <span class="nav-personal-label">个人</span>
+            <a href="/book/my_reading" class="first-nav-tab-extra">📖 我的阅读</a>
+            {% if can_private_book %}<a href="/book/my_books" class="first-nav-tab-extra">🔒 我的私有图书</a>{% endif %}
+        </div>
+    </div>
+    <div class="second-bar" id="second-box"></div>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th id="th-name" style="width:50%;text-align:left">资料名称（共0本）</th>
+                    <th style="width:14%">一级分类</th>
+                    <th style="width:14%">二级分类</th>
+                    <th style="width:22%">阅读中心</th>
+                </tr>
+            </thead>
+            <tbody id="book-table-body"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// ===== 由框架已有数据（books 树 / cat1_list / cat2_map）重建参照所需结构 =====
+// 框架传回的 cat1_list / cat2_map 是分类行（字典），参照模板期望字符串名，这里归一化
+const rawBookTree = {{ books|tojson|safe }} || {};
+const rawCat1     = {{ cat1_list|tojson|safe }} || [];
+const rawCat2     = {{ cat2_map|tojson|safe }}  || {};
+const _nameOf = (c) => (typeof c === "string" ? c : (c && c.name) || "");
+const cat1List = (rawCat1 || []).map(_nameOf).filter(Boolean);
+const cat2Map  = {};
+for (const k in (rawCat2 || {})) {
+    cat2Map[k] = (rawCat2[k] || []).map(_nameOf).filter(Boolean);
+}
+const bookTree = {};
+for (const c1 in rawBookTree) {
+    const c2obj = rawBookTree[c1] || {};
+    const normC2 = {};
+    for (const c2 in c2obj) normC2[_nameOf(c2) || c2] = c2obj[c2];
+    bookTree[_nameOf(c1) || c1] = normC2;
+}
+const all_cat = "全部书籍";
+const navFirst = [all_cat].concat(cat1List || []);
+const layout = cat2Map || {};
+
+const allBooks = [];
+for (const c1 in bookTree) {
+    const c2obj = bookTree[c1] || {};
+    for (const c2 in c2obj) {
+        (c2obj[c2] || []).forEach(b => {
+            allBooks.push({ id: b.id, name: b.name, cat1: b.cat1, cat2: b.cat2, path: b.path || "" });
+        });
+    }
+}
+
+// 为二级分类分配稳定配色（参照 catColor 效果）
+const catColor = {};
+const PALETTE = ["#6c8ebf","#82b366","#b85450","#d79b00","#9673a6","#2e8b9a","#b373b3","#7099c4","#e8743b","#19a979"];
+let _ci = 0;
+for (const c1 in cat2Map) { (cat2Map[c1]||[]).forEach(c2 => { if(!catColor[c2]) catColor[c2] = PALETTE[_ci++ % PALETTE.length]; }); }
+const userPerms = [];
+
+// ===== 功能开关 =====
+const SHOW_PREVIEW_BTN = false;
+const SHOW_DOWNLOAD_BTN = false;
+
+let activeC1 = all_cat;
+let activeC2 = "";
+
+function escapeHtml(s){
+    if(!s) return "";
+    return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+
+function getFileIcon(path) {
+    const p = (path||"").toLowerCase();
+    if(p.startsWith("http://") || p.startsWith("https://")) return "🔗";
+    if(p.includes(".pdf")) return "📕";
+    if(p.includes(".doc") || p.includes(".docx")) return "📄";
+    if(p.includes(".xls") || p.includes(".xlsx")) return "📊";
+    if(p.includes(".ppt") || p.includes(".pptx")) return "📙";
+    if(p.includes(".dwg") || p.includes(".dxf")) return "📐";
+    if(p.includes(".scl") || p.includes(".awl") || p.includes(".l5x")) return "⚙️";
+    if(p.includes(".step") || p.includes(".stp")) return "📦";
+    if(p.includes(".zip") || p.includes(".rar") || p.includes(".7z")) return "🗜️";
+    if(p.includes(".jpg") || p.includes(".png") || p.includes(".gif")) return "🖼️";
+    if(p.includes(".mp4") || p.includes(".avi") || p.includes(".mov")) return "🎬";
+    if(p.includes(".exe") || p.includes(".msi")) return "💿";
+    if(p.includes(".txt") || p.includes(".csv") || p.includes(".log")) return "📃";
+    return "📄";
+}
+
+function lighten(hex,ratio){
+    hex = (hex||"#ffffff").replace("#","");
+    const r = parseInt(hex.slice(0,2),16);
+    const g = parseInt(hex.slice(2,4),16);
+    const b = parseInt(hex.slice(4,6),16);
+    return `rgb(${Math.round(r + (255-r)*ratio)},${Math.round(g + (255-g)*ratio)},${Math.round(b + (255-b)*ratio)})`;
+}
+// 加深：淡彩按钮上的文字色，保证与新拟态浅底的对比度
+function darken(hex,ratio){
+    hex = (hex||"#000000").replace("#","");
+    const r = parseInt(hex.slice(0,2),16);
+    const g = parseInt(hex.slice(2,4),16);
+    const b = parseInt(hex.slice(4,6),16);
+    return `rgb(${Math.round(r*(1-ratio))},${Math.round(g*(1-ratio))},${Math.round(b*(1-ratio))})`;
+}
+// 分类色转半透明：表格行用 tint 而非实色，柔和且保留"跟随分类"的色相
+function hexToRgba(hex, alpha){
+    hex = (hex||"#000000").replace("#","");
+    const r = parseInt(hex.slice(0,2),16);
+    const g = parseInt(hex.slice(2,4),16);
+    const b = parseInt(hex.slice(4,6),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+}
+function isDarkMode(){ return document.body.classList.contains("dark"); }
+
+function sortBooks(books) {
+    const c1Order = {};
+    navFirst.forEach((n, i) => { if(n !== all_cat) c1Order[n] = i; });
+    const c2Order = {};
+    for(const [c1, c2List] of Object.entries(layout)) {
+        (c2List||[]).forEach((c2, i) => { c2Order[c1 + "|" + c2] = i; });
+    }
+    return books.slice().sort((a, b) => {
+        const a1 = c1Order[a.cat1] ?? 9999;
+        const b1 = c1Order[b.cat1] ?? 9999;
+        if(a1 !== b1) return a1 - b1;
+        const a2 = c2Order[a.cat1 + "|" + a.cat2] ?? 9999;
+        const b2 = c2Order[b.cat1 + "|" + b.cat2] ?? 9999;
+        if(a2 !== b2) return a2 - b2;
+        return (a.name||"").localeCompare(b.name||"", 'zh-CN');
+    });
+}
+
+window.onload = function(){
+    renderNav();
+    renderSecond();
+    renderTable();
+};
+
+function renderNav(){
+    const box = document.getElementById("first-nav-box");
+    box.innerHTML = "";
+    navFirst.forEach(name=>{
+        const btn = document.createElement("button");
+        btn.innerText = name;
+        if(name === activeC1) btn.classList.add("active-c1");
+        btn.onclick = ()=>{
+            activeC1 = name; activeC2 = "";
+            renderNav(); renderSecond(); renderTable();
+        }
+        box.appendChild(btn);
+    })
+}
+
+function renderSecond(){
+    const box = document.getElementById("second-box");
+    box.innerHTML = "";
+    if(activeC1 === all_cat) return;
+    const list = layout[activeC1] || [];
+    if(list.length === 0) {
+        box.innerHTML = '<span class="second-empty-tip">该分类暂无二级子目录</span>';
+        return;
+    }
+    list.forEach(name=>{
+        const btn = document.createElement("button");
+        btn.className = "second-btn";
+        // 新拟态中档：淡彩底（分类色混白）+ 分类色深版文字，取代原来的实色底白字
+        const _cc = catColor[name] || "#6088bb";
+        btn.style.background = lighten(_cc, 0.72);
+        btn.style.color = darken(_cc, 0.35);
+        btn.style.setProperty("--c2-color", _cc);
+        btn.innerText = name;
+        if(name === activeC2) btn.classList.add("active-c2");
+        btn.onclick = ()=>{ activeC2 = name; renderSecond(); renderTable(); }
+        box.appendChild(btn);
+    })
+}
+
+function fileLinkHtml(item){
+    const path = (item.path||"").trim();
+    const nameSafe = escapeHtml(item.name);
+    const icon = getFileIcon(path);
+    if(path.toLowerCase().startsWith("http")){
+        return `<a target="_blank" href="${encodeURI(path)}"><span class="file-icon">${icon}</span><span class="name-text" title="${nameSafe}">${nameSafe}</span></a>`;
+    }
+    return `<a target="_blank" href="/book/view/${item.id}"><span class="file-icon">${icon}</span><span class="name-text" title="${nameSafe}">${nameSafe}</span></a>`;
+}
+
+function actionHtml(item){
+    const isHttp = (item.path||"").toLowerCase().startsWith("http");
+    let btns = `<div class="action-btns">`;
+    if (!isHttp) {
+        if (SHOW_PREVIEW_BTN) {
+            btns += `<button class="btn-preview" onclick="window.open('/book/view/${item.id}')">预览</button>`;
+        }
+        if (SHOW_DOWNLOAD_BTN) {
+            btns += `<button class="btn-download" onclick="location.href='/book/download/${item.id}'">下载</button>`;
+        }
+    } else {
+        if (SHOW_PREVIEW_BTN) {
+            btns += `<button class="btn-preview" onclick="window.open('${encodeURI(item.path)}')">访问</button>`;
+        }
+    }
+    btns += `<button class="btn-detail" onclick="location.href='/book/detail/${item.id}'">读后感 ✍️</button>`;
+    btns += `</div>`;
+    return btns;
+}
+
+function renderRow(tr, item){
+    // 新拟态中档：行底色 = 分类色 tint（暗色下加深到 22%）+ 左侧 3px 实色条承载色相
+    const _rc = catColor[item.cat2];
+    if (_rc) {
+        tr.style.background = hexToRgba(_rc, isDarkMode() ? 0.22 : 0.10);
+        tr.style.borderLeft = "3px solid " + _rc;
+    }
+    const tdName = document.createElement("td");
+    tdName.className = "name-cell";
+    tdName.innerHTML = fileLinkHtml(item);
+    const tdC1 = document.createElement("td"); tdC1.innerText = item.cat1;
+    const tdC2 = document.createElement("td"); tdC2.innerText = item.cat2;
+    const tdOpt = document.createElement("td"); tdOpt.innerHTML = actionHtml(item);
+    tr.appendChild(tdName); tr.appendChild(tdC1); tr.appendChild(tdC2); tr.appendChild(tdOpt);
+}
+
+function renderTable(){
+    const tbody = document.getElementById("book-table-body");
+    tbody.innerHTML = "";
+
+    let showList = allBooks.filter(item=>{
+        if(activeC1 !== all_cat && item.cat1 !== activeC1) return false;
+        if(activeC2 && item.cat2 !== activeC2) return false;
+        return true;
+    });
+
+    if(activeC1 === all_cat) {
+        showList = sortBooks(showList);
+    }
+
+    document.getElementById("th-name").innerText = `资料名称（共${showList.length}本）`;
+
+    if(showList.length === 0) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="4">暂无匹配资料</td></tr>`;
+        return;
+    }
+
+    showList.forEach(item=>{
+        const tr = document.createElement("tr");
+        renderRow(tr, item);
+        tbody.appendChild(tr);
+    })
+}
+
+function doSearch(){
+    const kw = document.getElementById("search-input").value.trim();
+    if(!kw){ activeC1 = all_cat; activeC2 = ""; renderNav(); renderSecond(); renderTable(); return; }
+    fetch(`/book/api/search?kw=${encodeURIComponent(kw)}`)
+    .then(res=>res.json())
+    .then(res=>{
+        const list = (res.data && res.data.items) || [];
+        const tbody = document.getElementById("book-table-body");
+        tbody.innerHTML = "";
+        document.getElementById("th-name").innerText = `搜索结果（共${list.length}本）`;
+        if(list.length === 0) {
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="4">未找到匹配资料</td></tr>`;
+            return;
+        }
+        list.forEach(item=>{
+            const tr = document.createElement("tr");
+            renderRow(tr, item);
+            tbody.appendChild(tr);
+        })
+    })
+    .catch(err=>alert("搜索失败：" + err));
+}
+</script>
+{% endblock %}

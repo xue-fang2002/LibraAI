@@ -1,0 +1,1043 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}配置中心{% endblock %}
+
+{% block extra_css %}
+<style>
+.bm-ws {
+    min-height: 100%; background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ef 100%);
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    color: #1f2937; display: flex; flex-direction: column; overflow-y: auto;
+}
+.cc-header {
+    background: linear-gradient(90deg, #2A4365, #335788); color: #fff;
+    padding: 14px 24px; font-size: 18px; font-weight: bold;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.cc-back { background:#fff; color:#2A4365; padding:6px 16px; text-decoration:none; border-radius:6px; font-size:14px; font-weight:normal; }
+.cc-back:hover { background:#f0f4f8; }
+.cc-body { max-width: 1180px; width:100%; margin:0 auto; padding: 20px; flex:1; }
+
+/* 横向大模块行 */
+.module-row {
+    display: flex; gap: 10px; flex-wrap: wrap; padding: 4px 0 16px;
+    border-bottom: 2px solid #dde3ec; margin-bottom: 18px;
+}
+.module-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border: 1px solid #cdd6e3; background: #fff;
+    border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 600;
+    color: #41566f; transition: all .15s ease; user-select: none;
+}
+.module-tab:hover { border-color: #2A4365; color: #2A4365; }
+.module-tab.active { background: #2A4365; color: #fff; border-color: #2A4365; box-shadow: 0 3px 8px rgba(42,67,101,.25); }
+.module-panel { display: none; }
+.module-panel.active { display: block; animation: fade .2s ease; }
+@keyframes fade { from { opacity:0; transform: translateY(6px);} to {opacity:1; transform:none;} }
+
+.cc-card { background:#fff; border-radius:10px; padding:18px; margin-bottom:18px; box-shadow: 0 2px 8px rgba(42,67,101,.08); border-top: 3px solid #2A4365; }
+.cc-card h3 { color:#2A4365; font-size:16px; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+.cc-card .cc-desc { color:#6b7785; font-size:12px; margin-bottom:14px; }
+
+/* 通用按钮 */
+.btn-blue { background: #2A4365; color: #fff; border:none; }
+.btn-red { background: #bb2222; color: #fff; border:none; }
+.btn-green { background: #27ae60; color: #fff; border:none; }
+.btn-gray { background: #7f8c8d; color: #fff; border:none; }
+button.btn-blue, button.btn-red, button.btn-green, button.btn-gray { padding: 6px 12px; border-radius: 3px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+
+/* 表格 */
+.tbl { width:100%; border-collapse: collapse; font-size:13px; }
+.tbl th { text-align:left; background:#eef2f8; color:#41566f; padding:9px 10px; border-bottom:2px solid #dde3ec; font-weight:600; }
+.tbl td { padding:8px 10px; border-bottom:1px solid #eef1f5; vertical-align:middle; }
+.tbl tr:hover td { background:#f7f9fc; }
+
+/* 权限级别徽标 */
+.lvl { display:inline-block; padding:2px 9px; border-radius:10px; font-size:12px; font-weight:600; }
+.lvl-public { background:#e8f5e9; color:#27ae60; }
+.lvl-login  { background:#e7f0fb; color:#2980b9; }
+.lvl-admin  { background:#fdecea; color:#c0392b; }
+.lvl-selected { background:#f0e9fb; color:#8e44ad; }
+
+/* 锁按钮 */
+.lock-btn { border: 1px solid #c9d3e0; background:#fff; color:#2A4365; cursor:pointer; border-radius:4px; padding:3px 8px; font-size:12px; transition: all .15s ease; }
+.lock-btn:hover { background:#2A4365; color:#fff; }
+
+/* 模态 */
+.mask { display:none; position:fixed; inset:0; background:rgba(20,30,50,.45); z-index:200; align-items:center; justify-content:center; }
+.mask.show { display:flex; }
+.dialog { background:#fff; border-radius:10px; width:440px; max-width:92vw; padding:22px; box-shadow:0 10px 40px rgba(0,0,0,.25); }
+.dialog h3 { color:#2A4365; margin-bottom:14px; font-size:16px; }
+.form-item { margin-bottom:14px; }
+.form-item label { display:block; margin-bottom:5px; font-size:13px; font-weight:bold; color:#41566f; }
+.form-item select, .form-item input[type=text] { width:100%; padding:8px 10px; border:1px solid #ccd4e0; border-radius:6px; font-size:13px; box-sizing:border-box; }
+.dialog-btns { display:flex; justify-content:flex-end; gap:10px; margin-top:10px; }
+
+.perm-grid { display:grid; grid-template-columns: repeat(3,1fr); gap:6px 10px; max-height:200px; overflow:auto; border:1px solid #eef1f5; border-radius:6px; padding:10px; }
+.perm-grid label { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:normal; }
+.tip-text { color:#8895a5; font-size:12px; margin:4px 0 0; }
+
+/* ===== 图书馆子 tab ===== */
+.bl-subtab-bar { display:flex; gap:0; margin-bottom:14px; }
+.bl-subtab { padding:8px 18px; border:1px solid #cdd6e3; border-bottom:none; background:#eef2f8; color:#5a6c80; cursor:pointer; font-size:13px; font-weight:600; border-radius:8px 8px 0 0; user-select:none; }
+.bl-subtab:hover { background:#f5f7fa; color:#2A4365; }
+.bl-subtab.active { background:#fff; color:#2A4365; position:relative; z-index:2; }
+.bl-subtab + .bl-subtab { margin-left:-1px; }
+.bl-subtab-panel { display:none; }
+.bl-subtab-panel.active { display:block; }
+
+.bl-tool-bar { padding:0 0 12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.bl-tool-bar select, .bl-tool-bar input[type=text] { padding:5px 8px; border:1px solid #ccc; border-radius:3px; font-size:13px; }
+.bl-table-wrap { border:1px solid #e8f0f8; border-radius:6px; overflow:auto; max-height:calc(100vh - 420px); position:relative; }
+.bl-table-wrap table { width:100%; border-collapse:collapse; }
+.bl-table-wrap thead tr { background:#2A4365; color:#fff; position:sticky; top:0; z-index:10; }
+.bl-table-wrap th, .bl-table-wrap td { padding:4px 8px; text-align:center; border-bottom:1px solid #ddd; height:26px; font-size:13px; white-space:nowrap; }
+.bl-table-wrap .name-cell { text-align:left; }
+.bl-table-wrap tbody tr:hover { background:rgba(42,67,101,0.08); }
+.bl-table-wrap .op-btn { padding:3px 8px; border:none; border-radius:2px; cursor:pointer; font-size:12px; color:#fff; margin:1px; }
+
+/* 上传区 */
+.drop-zone { border:2px dashed #ccc; border-radius:6px; padding:30px 20px; text-align:center; color:#888; cursor:pointer; transition:all .25s; background:#fafbfc; }
+.drop-zone:hover { border-color:#2A4365; background:#f0f4f8; }
+.drop-zone.drag-over { border-color:#2A4365; background:#e8f0f8; }
+.upload-list { margin-top:10px; max-height:180px; overflow-y:auto; }
+.upload-item { display:flex; align-items:center; gap:8px; padding:8px 10px; background:#f5f7fa; border-radius:4px; margin-bottom:6px; font-size:13px; border-left:3px solid #2A4365; }
+.upload-item .up-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.upload-item .up-status.success { color:#27ae60; }
+.upload-item .up-status.error { color:#c0392b; }
+
+/* 批量入库 */
+.batch-form-list { max-height:250px; overflow-y:auto; margin-top:10px; border:1px solid #e0e8f2; border-radius:4px; padding:8px; background:#fafbfc; }
+.batch-form-item { display:flex; align-items:center; gap:8px; padding:6px 4px; border-bottom:1px solid #eee; }
+.batch-form-item:last-child { border-bottom:none; }
+.bf-index { width:24px; height:24px; background:#2A4365; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; }
+.bf-name { flex:1; padding:5px 8px; border:1px solid #ccc; border-radius:3px; font-size:13px; }
+
+/* 分类树 */
+.cat-tree { background:#fff; border:1px solid #ddd; border-radius:4px; padding:10px; }
+.cat-tree-item { padding:6px 8px; border-bottom:1px solid #eee; display:flex; align-items:center; gap:8px; }
+.cat-tree-item:last-child { border-bottom:none; }
+.cat-tree-c1 { font-weight:bold; color:#2A4365; background:#f0f4f8; }
+.cat-tree-c2 { padding-left:30px; }
+.order-btn { padding:2px 6px; font-size:11px; border:none; border-radius:2px; cursor:pointer; background:#ddd; }
+.order-btn:hover { background:#ccc; }
+.cat-actions { margin-left:auto; display:flex; gap:4px; }
+.qa-mode-sel { font-size:11px; padding:2px 4px; border-radius:3px; border:1px solid #bbb; background:#fff; color:#333; cursor:pointer; max-width:104px; }
+.qa-mode-sel:hover { border-color:#888; }
+.cat-actions button { padding:2px 8px; font-size:11px; border:none; border-radius:2px; cursor:pointer; }
+.btn-edit-cat { background:#3498db; color:#fff; }
+.btn-del-cat { background:#e74c3c; color:#fff; }
+
+/* 加载遮罩 */
+.loading-mask { position:absolute; left:0; top:0; width:100%; height:100%; background:rgba(255,255,255,0.7); display:none; justify-content:center; align-items:center; z-index:50; }
+.loading-mask.show { display:flex; }
+.loading-spinner { width:40px; height:40px; border:4px solid #e8f0f8; border-top-color:#2A4365; border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* 统计卡片 */
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:12px; }
+.stat-card { background:linear-gradient(135deg,#fff 0%,#f6f8fc 100%); border-radius:8px; padding:14px 16px; box-shadow:0 4px 12px rgba(42,67,101,.08); display:flex; align-items:center; gap:10px; }
+.stat-card .icon { width:36px; height:36px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px; color:#fff; }
+.stat-card.c1 .icon { background:linear-gradient(135deg,#4a6b9c,#2A4365); }
+.stat-card.c2 .icon { background:linear-gradient(135deg,#5a9c8a,#2e7d65); }
+.stat-card.c3 .icon { background:linear-gradient(135deg,#b06b9c,#7d3e75); }
+.stat-card .num { font-size:22px; font-weight:700; color:#2A4365; line-height:1; }
+.stat-card .label { font-size:12px; color:#5a6c80; margin-top:2px; }
+
+/* 弹窗共用 */
+.cfg-mask { position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4); display:none; justify-content:center; align-items:center; z-index:9999; padding:10px; }
+.cfg-mask.show { display:flex; }
+.cfg-dialog { width:520px; max-width:calc(100vw - 20px); max-height:90vh; background:#fff; padding:20px; border-radius:6px; overflow-y:auto; display:flex; flex-direction:column; }
+.cfg-dialog h3 { margin-bottom:15px; color:#2A4365; flex-shrink:0; font-size:16px; }
+.cfg-form-item { margin-bottom:12px; flex-shrink:0; }
+.cfg-form-item label { display:block; margin-bottom:4px; font-size:13px; font-weight:bold; }
+.cfg-form-item input, .cfg-form-item select, .cfg-form-item textarea { width:100%; padding:7px; border:1px #ccc solid; border-radius:3px; font-size:13px; box-sizing:border-box; }
+.cfg-form-item textarea { min-height:80px; resize:vertical; }
+.cfg-dialog-btns { display:flex; justify-content:flex-end; gap:8px; margin-top:18px; flex-shrink:0; }
+.cfg-dialog-btns button { padding:6px 14px; border:none; border-radius:3px; cursor:pointer; font-size:13px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bm-ws">
+    <div class="cc-header">
+        <span>⚙️ 配置中心</span>
+        <a href="/book" class="cc-back">← 返回资料库</a>
+    </div>
+
+    <div class="cc-body">
+        <!-- 横向大模块行 -->
+        <div class="module-row" id="moduleRow">
+            {% for m in modules_row %}
+            <div class="module-tab {% if loop.first %}active{% endif %}" data-panel="panel-{{ m.module_id }}" onclick="switchModule('panel-{{ m.module_id }}')">
+                <span>{{ m.icon }}</span><span>{{ m.display_name }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 各模块面板 -->
+        {% for m in modules_row %}
+        <div class="module-panel {% if loop.first %}active{% endif %}" id="panel-{{ m.module_id }}">
+            {% if m.module_id == 'book_lib' %}
+                <!-- ===== 图书馆：完整功能 + 每行🔒锁 ===== -->
+
+                <!-- 子 tab 行 -->
+                <div class="bl-subtab-bar">
+                    <div class="bl-subtab active" data-panel="bl-books" onclick="blSwitchTab('bl-books')">📚 图书管理</div>
+                    <div class="bl-subtab" data-panel="bl-cats" onclick="blSwitchTab('bl-cats')">📂 分类管理</div>
+                    <div class="bl-subtab" data-panel="bl-rules" onclick="blSwitchTab('bl-rules')">🔐 权限管理</div>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-grid">
+                    <div class="stat-card c1"><div class="icon">📚</div><div><div class="num">{{ total_books }}</div><div class="label">图书总数</div></div></div>
+                    <div class="stat-card c2"><div class="icon">🗂️</div><div><div class="num">{{ total_categories }}</div><div class="label">一级分类</div></div></div>
+                    <div class="stat-card c3"><div class="icon">👥</div><div><div class="num">{{ total_users }}</div><div class="label">用户总数</div></div></div>
+                </div>
+
+                <!-- 图书管理 -->
+                <div class="bl-subtab-panel active" id="bl-books">
+                    <div class="bl-tool-bar">
+                        <button class="btn-blue" id="btnAddBook">新增资料</button>
+                        <button class="btn-red" onclick="batchDel()">批量删除选中</button>
+                        <button class="btn-blue" onclick="openBatchMove()">批量移动分类</button>
+                        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <select id="filterC1" onchange="onFilterChange()"><option value="">全部一级分类</option></select>
+                            <select id="filterC2" onchange="onFilterChange()"><option value="">全部二级分类</option></select>
+                            <input type="text" id="searchBook" placeholder="搜索资料名称..." oninput="onFilterChange()" style="width:160px;">
+                            <button class="btn-blue" onclick="clearFilter()">重置</button>
+                        </div>
+                    </div>
+                    <div class="bl-table-wrap">
+                        <div class="loading-mask" id="loadingMask"><div class="loading-spinner"></div></div>
+                        <table>
+                            <thead><tr>
+                                <th style="width:4%"><input type="checkbox" id="checkAll"></th>
+                                <th id="th-name" style="width:40%;text-align:left">资料名称（共0本）</th>
+                                <th style="width:14%">一级分类</th>
+                                <th style="width:14%">二级分类</th>
+                                <th style="width:12%">权限</th>
+                                <th style="width:16%">操作</th>
+                            </tr></thead>
+                            <tbody id="book-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 分类管理 -->
+                <div class="bl-subtab-panel" id="bl-cats">
+                    <div class="bl-tool-bar">
+                        <button class="btn-blue" onclick="openAddC1()">新增一级分类</button>
+                        <button class="btn-blue" onclick="openAddC2()">新增二级分类</button>
+                        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+                            <input type="text" id="searchCat" placeholder="搜索分类名称..." oninput="filterCatTree()" style="width:160px;">
+                            <button class="btn-blue" onclick="clearCatFilter()">重置</button>
+                        </div>
+                    </div>
+                    <div class="bl-table-wrap" style="max-height:calc(100vh - 380px);">
+                        <div class="cat-tree" id="catTree"></div>
+                    </div>
+                </div>
+
+                <!-- 权限管理（规则表） -->
+                <div class="bl-subtab-panel" id="bl-rules">
+                    <div class="cc-card" style="border-top:none;box-shadow:none;padding:0;">
+                        <div class="cc-desc">当前所有非公开的资源权限规则；删除后恢复为默认公开</div>
+                        <table class="tbl">
+                            <thead><tr><th>资源类型</th><th>资源名称</th><th>访问级别</th><th>指定用户</th><th style="width:80px;">操作</th></tr></thead>
+                            <tbody>
+                            {% for r in rules %}
+                                <tr>
+                                    <td>{{ r.type_label }}</td>
+                                    <td>{{ r.resource_name }}</td>
+                                    <td><span class="lvl lvl-{{ r.permission_level }}">{% if r.permission_level=='public' %}🟢 公开{% elif r.permission_level=='login' %}🔵 登录{% elif r.permission_level=='admin' %}🔴 管理员{% else %}👤 指定用户{% endif %}</span></td>
+                                    <td>{% if r.allowed_users %}{{ r.allowed_users|length }} 人{% else %}-{% endif %}</td>
+                                    <td><button class="lock-btn" onclick="delRule('{{ r.resource_type }}','{{ r.resource_id }}')">删除</button></td>
+                                </tr>
+                            {% else %}
+                                <tr><td colspan="5" style="padding:22px;color:#999;text-align:center;">暂无权限规则（全部默认公开）</td></tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            {% elif m.module_id == 'ai_center' %}
+                <!-- ===== AI 中心：直接内嵌 AI 配置页（一步到位，无需二次点击） ===== -->
+                <div style="background:#fff;border:1px solid #cdd6e3;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(42,67,101,.08);">
+                    <iframe src="/config/ai?embed=1" title="AI 配置"
+                        style="width:100%;height:calc(100vh - 190px);min-height:600px;border:none;display:block;background:#fff;"></iframe>
+                </div>
+
+            {% else %}
+                <!-- 其他模块：信息卡 + 进入 -->
+                <div class="cc-card">
+                    <h3>{{ m.icon }} {{ m.display_name }}</h3>
+                    <div class="cc-desc">{{ m.description or '模块内容' }}</div>
+                    <a class="lock-btn" style="text-decoration:none;display:inline-block;" href="{{ m.url }}">进入 {{ m.display_name }} →</a>
+                </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- ==================== 图书馆弹窗 ==================== -->
+<!-- 新增/编辑资料 -->
+<div class="cfg-mask" id="maskBook">
+    <div class="cfg-dialog">
+        <h3 id="dialogBookTitle">新增资料</h3>
+        <input type="hidden" id="editId">
+        <div class="cfg-form-item"><label>一级分类</label><select id="selC1"></select></div>
+        <div class="cfg-form-item"><label>二级分类</label><select id="selC2"></select></div>
+        <div class="cfg-form-item"><label>AI 问答档位 <span style="font-weight:normal;color:#888;font-size:12px">(覆盖分类自动判定)</span></label>
+            <select id="selQaMode">
+                <option value="auto">自动（按分类）</option>
+                <option value="public">公共</option>
+                <option value="general">一般</option>
+                <option value="precise">精确</option>
+            </select></div>
+        <div class="cfg-form-item"><label>文件路径/在线链接 <span style="font-weight:normal;color:#888;font-size:12px">(上传后自动填充，或输入http链接)</span></label>
+            <input type="text" id="bookPath" placeholder="上传文件后自动填充路径，或输入在线链接"></div>
+        <div class="cfg-form-item"><label>资料名称</label><input type="text" id="bookName" placeholder="上传后自动填充文件名，可修改"></div>
+        <div class="cfg-form-item"><label>文件上传 <span style="font-weight:normal;color:#888;font-size:12px">(支持拖拽或点击选择，可批量)</span></label>
+            <div class="drop-zone" id="dropZone">
+                <div style="font-size:36px;margin-bottom:8px;">📁</div>
+                <div style="font-size:14px;margin-bottom:4px;">拖拽文件到此处，或 <span style="color:#2A4365;font-weight:bold;">点击选择</span></div>
+                <div style="font-size:12px;color:#aaa;">支持 PDF、Word、Excel、PPT、压缩包、图片、视频、CAD等</div>
+                <input type="file" id="fileInput" multiple style="display:none;">
+            </div>
+            <div class="upload-list" id="uploadList"></div>
+        </div>
+        <div class="cfg-dialog-btns">
+            <button type="button" onclick="closeBookDialog()">取消</button>
+            <button type="button" class="btn-blue" onclick="saveBook()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- 批量入库 -->
+<div class="cfg-mask" id="maskBatchAdd">
+    <div class="cfg-dialog" style="width:600px;">
+        <h3>批量入库资料</h3>
+        <p class="tip-text" style="color:#bb2222;">已上传 <span id="batchCount">0</span> 个文件，请确认资料名称和分类</p>
+        <div class="cfg-form-item"><label>统一一级分类</label><select id="batchC1" onchange="renderBatchC2()"></select></div>
+        <div class="cfg-form-item"><label>统一二级分类</label><select id="batchC2"></select></div>
+        <div class="batch-form-list" id="batchFormList"></div>
+        <div class="cfg-dialog-btns">
+            <button onclick="closeBatchAdd()">取消</button>
+            <button class="btn-blue" onclick="submitBatchAdd()">确认批量入库</button>
+        </div>
+    </div>
+</div>
+
+<!-- 新增一级分类 -->
+<div class="cfg-mask" id="maskAddC1">
+    <div class="cfg-dialog">
+        <h3>新增一级分类</h3>
+        <div class="cfg-form-item"><label>分类名称</label><input type="text" id="newC1Name"></div>
+        <div class="cfg-dialog-btns"><button onclick="closeAddC1()">取消</button><button class="btn-blue" onclick="submitAddC1()">确认新增</button></div>
+    </div>
+</div>
+
+<!-- 新增二级分类 -->
+<div class="cfg-mask" id="maskAddC2">
+    <div class="cfg-dialog">
+        <h3>新增二级分类</h3>
+        <div class="cfg-form-item"><label>所属一级分类</label><select id="parentC2Sel"></select></div>
+        <div class="cfg-form-item"><label>二级分类名称</label><input type="text" id="newC2Name"></div>
+        <div class="cfg-dialog-btns"><button onclick="closeAddC2()">取消</button><button class="btn-blue" onclick="submitAddC2()">确认新增</button></div>
+    </div>
+</div>
+
+<!-- 批量移动 -->
+<div class="cfg-mask" id="maskBatchMove">
+    <div class="cfg-dialog">
+        <h3>批量移动选中资料</h3>
+        <p class="tip-text" style="color:#bb2222;">请先勾选左侧资料复选框</p>
+        <div class="cfg-form-item"><label>目标一级分类</label><select id="moveC1"></select></div>
+        <div class="cfg-form-item"><label>目标二级分类</label><select id="moveC2"></select></div>
+        <div class="cfg-dialog-btns"><button onclick="closeBatchMove()">取消</button><button class="btn-blue" onclick="submitBatchMove()">确认移动</button></div>
+    </div>
+</div>
+
+<!-- 编辑分类 -->
+<div class="cfg-mask" id="maskEditCat">
+    <div class="cfg-dialog">
+        <h3>编辑分类</h3>
+        <input type="hidden" id="editCatId">
+        <div class="cfg-form-item"><label>分类名称</label><input type="text" id="editCatName"></div>
+        <div class="cfg-form-item"><label>分类颜色</label>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <input type="color" id="editCatColor" value="#6c5ce7" style="width:44px;height:36px;border:1px solid #ddd;border-radius:4px;cursor:pointer;padding:2px;">
+                <input type="text" id="editCatColorText" value="#6c5ce7" style="width:100px;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-family:monospace;font-size:13px;" oninput="syncColorPicker()">
+                <span id="editCatColorPreview" style="display:inline-block;width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.2);background:#6c5ce7;"></span>
+            </div>
+            <div style="margin-top:6px;"><span style="font-size:12px;color:#888;">快捷选色：</span>
+                <span id="presetColors" style="display:inline-flex;gap:6px;margin-top:4px;"></span>
+            </div>
+        </div>
+        <div class="cfg-dialog-btns"><button onclick="closeEditCat()">取消</button><button class="btn-blue" onclick="submitEditCat()">确认</button></div>
+    </div>
+</div>
+
+<!-- 访问权限设置模态（书/分类共用） -->
+<div class="mask" id="lockMask">
+    <div class="dialog">
+        <h3>🔒 访问权限设置</h3>
+        <input type="hidden" id="lkType"><input type="hidden" id="lkId">
+        <div class="form-item">
+            <label>资源</label>
+            <input type="text" id="lkName" readonly style="background:#f0f0f0;">
+        </div>
+        <div class="form-item">
+            <label>访问级别</label>
+            <select id="lkLevel" onchange="onLkLevelChange()">
+                <option value="public">🟢 公开（所有人可见）</option>
+                <option value="login">🔵 需登录（仅登录用户可见）</option>
+                <option value="admin">🔴 管理员（仅管理员可见）</option>
+                <option value="selected">👤 指定用户可见</option>
+            </select>
+        </div>
+        <div class="form-item" id="lkUsersWrap" style="display:none;">
+            <label>可查看用户</label>
+            <div class="perm-grid" id="lkUsers"></div>
+        </div>
+        <div class="dialog-btns">
+            <button class="btn-gray" style="padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;" onclick="closeLock()">取消</button>
+            <button class="btn-blue" style="padding:8px 18px;border-radius:6px;cursor:pointer;font-size:13px;" onclick="saveLock()">确认保存</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ===== 配置中心模块切换 =====
+function switchModule(panelId) {
+    document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.module-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`[data-panel="${panelId}"]`).classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+    try { sessionStorage.setItem('cc_module', panelId); } catch(e){}
+}
+try {
+    const saved = sessionStorage.getItem('cc_module');
+    if (saved && document.getElementById(saved)) switchModule(saved);
+} catch(e){}
+
+// ===== 图书馆子 tab 切换 =====
+function blSwitchTab(panelId) {
+    document.querySelectorAll('.bl-subtab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.bl-subtab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector(`.bl-subtab[data-panel="${panelId}"]`).classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+    // 记住当前子 tab：排序/增删改等操作 location.reload() 后不跳回默认的图书管理
+    try { sessionStorage.setItem('config_active_tab', panelId); } catch(e){}
+}
+
+// ===== 锁模态 =====
+const CC_USERS = {{ users|tojson|safe }};
+const CC_RULES = {{ rules|tojson|safe }};
+const CC_BOOK_LEVELS = {{ book_levels|tojson|safe }};
+const CC_CAT1_LEVELS = {{ cat1_levels|tojson|safe }};
+const CC_CAT2_LEVELS = {{ cat2_levels|tojson|safe }};
+const CC_QA_BY_CAT = {{ qa_by_cat|tojson|safe }};
+const CC_QA_MIN_SCORE = {{ qa_min_score|tojson|safe }};
+const CC_QA_DEFAULT = {{ qa_default|tojson|safe }};
+
+function openLockById(type, id, name) {
+    var level = 'public';
+    if (type === 'book') level = CC_BOOK_LEVELS[id] || 'public';
+    else if (type === 'cat1') level = CC_CAT1_LEVELS[id] || 'public';
+    else if (type === 'cat2') level = CC_CAT2_LEVELS[id] || 'public';
+    document.getElementById('lkType').value = type;
+    document.getElementById('lkId').value = id;
+    document.getElementById('lkName').value = name;
+    document.getElementById('lkLevel').value = level;
+    renderLkUsers(type, id);
+    onLkLevelChange();
+    document.getElementById('lockMask').classList.add('show');
+}
+function closeLock() { document.getElementById('lockMask').classList.remove('show'); }
+function onLkLevelChange() {
+    var lvl = document.getElementById('lkLevel').value;
+    document.getElementById('lkUsersWrap').style.display = (lvl === 'selected') ? 'block' : 'none';
+}
+function renderLkUsers(type, id) {
+    var box = document.getElementById('lkUsers');
+    box.innerHTML = '';
+    var rule = (CC_RULES || []).find(function(r){ return r.resource_type === type && String(r.resource_id) === String(id); });
+    var allowed = (rule && rule.allowed_users) ? rule.allowed_users.map(String) : [];
+    (CC_USERS || []).forEach(function(u) {
+        var lbl = document.createElement('label');
+        var cb = document.createElement('input');
+        cb.type = 'checkbox'; cb.value = u.id; cb.className = 'lk-user-cb';
+        if (allowed.includes(String(u.id))) cb.checked = true;
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(' ' + (u.name || u.account)));
+        box.appendChild(lbl);
+    });
+}
+function saveLock() {
+    var type = document.getElementById('lkType').value;
+    var id = document.getElementById('lkId').value;
+    var level = document.getElementById('lkLevel').value;
+    var allowed = Array.from(document.querySelectorAll('#lkUsers .lk-user-cb:checked')).map(function(cb){ return cb.value; });
+    if (level === 'selected' && allowed.length === 0) { alert('请至少选择一个可查看用户'); return; }
+    fetch('/config/api/permission/save', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ permissions: [{ resource_id: id, resource_type: type, permission_level: level, allowed_users: allowed }] })
+    }).then(function(r){return r.json();}).then(function(res){
+        if (res.code === 0 || res.code === 200) { alert(res.msg || '已保存'); location.reload(); }
+        else alert(res.msg || '保存失败');
+    }).catch(function(e){ alert('请求失败：'+e); });
+}
+function delRule(type, id) {
+    if (!confirm('确定删除该权限规则？删除后恢复为默认公开。')) return;
+    fetch('/config/api/permission/delete', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ resource_type: type, resource_id: id })
+    }).then(function(r){return r.json();}).then(function(res){
+        if (res.code === 0 || res.code === 200) location.reload();
+        else alert(res.msg || '删除失败');
+    }).catch(function(e){ alert('请求失败：'+e); });
+}
+
+// ===== 原始 /book/config 全功能 JS =====
+var cfgData = {};
+try { cfgData = {{ cfg|tojson|safe }} || {}; } catch(e) { console.error('cfg render err:', e); }
+var allBooks = cfgData.books || [];
+var layoutData = cfgData.layout || {};
+var navFirst = cfgData.nav_first || [];
+var catColor = cfgData.cat_colors || {};
+var allCat = "{{ all_cat }}";
+var catIdMap = {{ cat_id_map|tojson|safe }};
+var userPerms = {{ user_perms|tojson|safe }};
+var pendingBatchFiles = [];
+
+function getBookCount(c1Name, c2Name) {
+    return allBooks.filter(function(b){ return b.cat1 === c1Name && b.cat2 === c2Name; }).length;
+}
+function escapeHtml(s) { if(!s) return ""; return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+function lighten(hex, ratio) {
+    if(!hex || typeof hex !== "string" || !hex.startsWith("#") || hex.length < 7) return "rgb(255,255,255)";
+    hex = hex.replace("#","");
+    var r=parseInt(hex.substring(0,2),16), g=parseInt(hex.substring(2,4),16), b=parseInt(hex.substring(4,6),16);
+    if(isNaN(r)||isNaN(g)||isNaN(b)) return "rgb(255,255,255)";
+    r=parseInt(r+(255-r)*ratio); g=parseInt(g+(255-g)*ratio); b=parseInt(b+(255-b)*ratio);
+    return "rgb("+r+","+g+","+b+")";
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+    try {
+        var savedTab = sessionStorage.getItem('config_active_tab');
+        if(savedTab && document.getElementById(savedTab)) { blSwitchTab(savedTab); }
+    } catch(e) {}
+    try { renderTable(); } catch(e) { console.error('renderTable:', e); }
+    try { renderSelC1(); } catch(e) { console.error('renderSelC1:', e); }
+    try { renderFilterC1(); } catch(e) { console.error('renderFilterC1:', e); }
+    try { renderCatTree(); } catch(e) { console.error('renderCatTree:', e); }
+    try {
+        var checkAll = document.getElementById("checkAll");
+        if(checkAll) checkAll.onchange = toggleAllCheck;
+    } catch(e) {}
+    try { initUploadZone(); } catch(e) { console.error('initUploadZone:', e); }
+    var btnAdd = document.getElementById('btnAddBook');
+    if(btnAdd) btnAdd.addEventListener('click', openBookDialog);
+});
+
+// ==================== 图书表格 ====================
+function renderTable() {
+    showLoading();
+    var tbody = document.getElementById("book-table-body");
+    if(!tbody) { hideLoading(); return; }
+    tbody.innerHTML = "";
+    var filterC1 = document.getElementById("filterC1").value;
+    var filterC2 = document.getElementById("filterC2").value;
+    var searchKw = document.getElementById("searchBook").value.trim().toLowerCase();
+    var showBooks = allBooks.filter(function(book) {
+        if(filterC1 && book.cat1 !== filterC1) return false;
+        if(filterC2 && book.cat2 !== filterC2) return false;
+        if(searchKw && !book.name.toLowerCase().includes(searchKw)) return false;
+        return true;
+    });
+    document.getElementById("th-name").innerText = "资料名称（共"+showBooks.length+"本）";
+    showBooks.forEach(function(book, idx) {
+        var tr = document.createElement("tr");
+        var c2Color = catColor[book.cat2];
+        if(c2Color && c2Color.startsWith("#")) { tr.style.background = lighten(c2Color, 0.5); }
+        else { tr.style.background = "#e8ecf2"; }
+        if(idx % 2 === 1) { tr.style.filter = "brightness(0.97)"; }
+        var tdCheck = document.createElement("td");
+        tdCheck.innerHTML = '<input type="checkbox" class="bookCheck" data-id="'+book.id+'">';
+        var tdName = document.createElement("td"); tdName.className = "name-cell"; tdName.innerText = book.name;
+        var tdC1 = document.createElement("td"); tdC1.innerText = book.cat1;
+        var tdC2 = document.createElement("td"); tdC2.innerText = book.cat2;
+        // 权限列
+        var tdLvl = document.createElement("td");
+        var lvl = CC_BOOK_LEVELS[book.id] || 'public';
+        var lvlText = lvl==='public'?'🟢公开':lvl==='login'?'🔵登录':lvl==='admin'?'🔴管理员':'👤指定';
+        tdLvl.innerHTML = '<span class="lvl lvl-'+lvl+'">'+lvlText+'</span>';
+        // 操作列
+        var tdOpt = document.createElement("td");
+        var btns = '';
+        // 排序按钮（有编辑权限即显示，在所属分类内上下移动）
+        if(userPerms.includes('book_edit')) {
+            btns += '<button class="op-btn" style="background:#27ae60;" title="置顶" onclick="moveBookOrder(\''+book.id+'\',\'top\')">⏫</button>';
+            btns += '<button class="op-btn" style="background:#2980b9;" title="上移" onclick="moveBookOrder(\''+book.id+'\',\'up\')">▲</button>';
+            btns += '<button class="op-btn" style="background:#2980b9;" title="下移" onclick="moveBookOrder(\''+book.id+'\',\'down\')">▼</button>';
+            btns += '<button class="op-btn" style="background:#e67e22;" title="置底" onclick="moveBookOrder(\''+book.id+'\',\'bottom\')">⏬</button>';
+        }
+        if(userPerms.includes('book_edit')) btns += '<button class="op-btn" style="background:#2A4365;" onclick="editBook(\''+book.id+'\')">编辑</button>';
+        if(userPerms.includes('book_delete')) btns += ' <button class="op-btn" style="background:#bb2222;" onclick="delBook(\''+book.id+'\')">删除</button>';
+        btns += ' <button class="op-btn" style="background:#6c5ce7;" onclick="openLockById(\'book\',\''+book.id+'\',\''+escapeHtml(book.name).replace(/'/g,"\\'")+'\')">🔒</button>';
+        tdOpt.innerHTML = btns || '<span style="color:#ccc;font-size:12px;">-</span>';
+        tr.appendChild(tdCheck); tr.appendChild(tdName); tr.appendChild(tdC1); tr.appendChild(tdC2); tr.appendChild(tdLvl); tr.appendChild(tdOpt);
+        tbody.appendChild(tr);
+    });
+    hideLoading();
+}
+function showLoading() { var m = document.getElementById('loadingMask'); if(m) m.classList.add('show'); }
+function hideLoading() { var m = document.getElementById('loadingMask'); if(m) m.classList.remove('show'); }
+
+function renderFilterC1() {
+    var sel = document.getElementById("filterC1");
+    sel.innerHTML = '<option value="">全部一级分类</option>';
+    navFirst.forEach(function(n) { if(n === allCat) return; var opt = document.createElement("option"); opt.value = n; opt.innerText = n; sel.appendChild(opt); });
+    sel.onchange = renderFilterC2;
+}
+function renderFilterC2() {
+    var parent = document.getElementById("filterC1").value;
+    var sel = document.getElementById("filterC2");
+    sel.innerHTML = '<option value="">全部二级分类</option>';
+    if(!parent) return;
+    (layoutData[parent] || []).forEach(function(n) { var opt = document.createElement("option"); opt.value = n; opt.innerText = n; sel.appendChild(opt); });
+}
+function onFilterChange() { renderTable(); }
+function clearFilter() { document.getElementById("filterC1").value = ""; document.getElementById("filterC2").innerHTML = '<option value="">全部二级分类</option>'; document.getElementById("searchBook").value = ""; renderTable(); }
+function toggleAllCheck() { document.querySelectorAll(".bookCheck").forEach(function(c){ c.checked = document.getElementById("checkAll").checked; }); }
+
+// ==================== 新增/编辑资料弹窗 ====================
+function openBookDialog() {
+    document.getElementById("maskBook").classList.add('show');
+    document.getElementById("dialogBookTitle").innerText = "新增资料";
+    document.getElementById("editId").value = "";
+    document.getElementById("bookName").value = "";
+    document.getElementById("bookPath").value = "";
+    document.getElementById("uploadList").innerHTML = "";
+    try { renderSelC1(); } catch(err) { console.error(err); }
+}
+function closeBookDialog() { document.getElementById("maskBook").classList.remove('show'); document.getElementById("uploadList").innerHTML = ""; pendingBatchFiles = []; }
+function renderSelC1() {
+    var sel = document.getElementById("selC1"); sel.innerHTML = "";
+    var emptyOpt = document.createElement("option"); emptyOpt.value = ""; emptyOpt.innerText = "--请选择一级分类--"; sel.appendChild(emptyOpt);
+    navFirst.forEach(function(n) { if(n === allCat) return; var opt = document.createElement("option"); opt.value = n; opt.innerText = n; sel.appendChild(opt); });
+    sel.onchange = renderSelC2; renderSelC2();
+    var moveC1 = document.getElementById("moveC1"); moveC1.innerHTML = sel.innerHTML; moveC1.onchange = renderMoveC2; renderMoveC2();
+    var parentSel = document.getElementById("parentC2Sel"); parentSel.innerHTML = sel.innerHTML;
+}
+function renderSelC2() {
+    var parent = document.getElementById("selC1").value;
+    var sel = document.getElementById("selC2"); sel.innerHTML = "";
+    var emptyOpt = document.createElement("option"); emptyOpt.value = ""; emptyOpt.innerText = "--请选择二级分类--"; sel.appendChild(emptyOpt);
+    if(!parent) return;
+    (layoutData[parent] || []).forEach(function(n) { var cnt = getBookCount(parent, n); var opt = document.createElement("option"); opt.value = n; opt.innerText = n + " ("+cnt+"本)"; sel.appendChild(opt); });
+}
+function renderMoveC2() {
+    var parent = document.getElementById("moveC1").value;
+    var sel = document.getElementById("moveC2"); sel.innerHTML = "";
+    (layoutData[parent] || []).forEach(function(n) { var cnt = getBookCount(parent, n); var opt = document.createElement("option"); opt.value = n; opt.innerText = n + " ("+cnt+"本)"; sel.appendChild(opt); });
+}
+function saveBook() {
+    var id = document.getElementById("editId").value;
+    var name = document.getElementById("bookName").value.trim();
+    var c1 = document.getElementById("selC1").value;
+    var c2 = document.getElementById("selC2").value;
+    var path = document.getElementById("bookPath").value.trim();
+    if(!name || !path) { alert("名称和路径不能为空"); return; }
+    if(!c1) { alert("请选择一级分类"); return; }
+    if(!c2) { alert("请选择二级分类"); return; }
+    var fd = new FormData();
+    fd.append("name", name); fd.append("c1", c1); fd.append("c2", c2); fd.append("path", path);
+    var url = "/book/api/book/add";
+    if(id) { url = "/book/api/edit"; fd.append("id", id); fd.append("cat1", c1); fd.append("cat2", c2); fd.append("qa_mode", document.getElementById("selQaMode").value); }
+    fetch(url, { method: "POST", body: fd, headers: { "X-Requested-With": "XMLHttpRequest" } })
+    .then(function(r) { if(!r.ok) return r.text().then(function(t){ throw new Error('服务器错误(' + r.status + '): ' + t.substring(0, 200)); }); return r.json(); })
+    .then(function(res) { alert(res.msg); if(res.code === 200) { closeBookDialog(); location.reload(); } })
+    .catch(function(err) { alert("保存失败：" + err.message); console.error("saveBook:", err); });
+}
+function editBook(bid) {
+    var b = allBooks.find(function(x){ return x.id === bid; }); if(!b) return;
+    document.getElementById("dialogBookTitle").innerText = "编辑资料";
+    document.getElementById("editId").value = bid;
+    document.getElementById("bookName").value = b.name;
+    document.getElementById("bookPath").value = b.path || '';
+    document.getElementById("uploadList").innerHTML = "";
+    renderSelC1();
+    document.getElementById("selC1").value = b.cat1;
+    renderSelC2();
+    document.getElementById("selC2").value = b.cat2;
+    document.getElementById("selQaMode").value = b.qa_mode || 'auto';
+    document.getElementById("maskBook").classList.add('show');
+}
+function delBook(bid) {
+    if(!confirm("确定删除这条资料？无法恢复")) return;
+    var fd = new FormData(); fd.append("id", bid);
+    fetch("/book/api/delete", { method: "POST", body: fd })
+    .then(function(r){ return r.json(); }).then(function(res){ alert(res.msg); location.reload(); });
+}
+// 图书排序：在所属分类内 上下移动 / 置顶 / 置底（不刷新整页，保留筛选状态）
+function moveBookOrder(bid, direction) {
+    var endpoint = (direction === 'top' || direction === 'bottom') ? '/book/api/book/move_edge' : '/book/api/book/move_order';
+    var fd = new FormData(); fd.append("id", bid); fd.append("direction", direction);
+    fetch(endpoint, { method: "POST", body: fd })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+        if(res.code !== 200 && res.code !== 0) { if(res.msg) alert(res.msg); return; }
+        // 从服务端重新拉取图书列表（已按 cat1/cat2/sort_order 排好序）并重渲染
+        fetch('/book/api/books_list')
+        .then(function(r){ return r.json(); })
+        .then(function(bkRes){
+            if(bkRes.code === 200 || bkRes.code === 0) {
+                allBooks = (bkRes.data && bkRes.data.books) || bkRes.books || [];
+                renderTable();
+            } else { location.reload(); }
+        }).catch(function(){ location.reload(); });
+    }).catch(function(){ location.reload(); });
+}
+function batchDel() {
+    var checks = document.querySelectorAll(".bookCheck:checked");
+    if(checks.length === 0) { alert("请先勾选要删除的资料"); return; }
+    if(!confirm("确定删除选中"+checks.length+"条？")) return;
+    var ids = []; checks.forEach(function(c){ ids.push(c.dataset.id); });
+    var fd = new FormData(); ids.forEach(function(i){ fd.append("ids", i); });
+    fetch("/book/api/batch_delete", { method: "POST", body: fd })
+    .then(function(r){ return r.json(); }).then(function(res){ alert(res.msg); location.reload(); });
+}
+function openBatchMove() { renderSelC1(); document.getElementById("maskBatchMove").classList.add('show'); }
+function closeBatchMove() { document.getElementById("maskBatchMove").classList.remove('show'); }
+function submitBatchMove() {
+    var checks = document.querySelectorAll(".bookCheck:checked");
+    if(checks.length === 0) { alert("请先勾选资料"); return; }
+    var c1 = document.getElementById("moveC1").value;
+    var c2 = document.getElementById("moveC2").value;
+    var ids = []; checks.forEach(function(c){ ids.push(c.dataset.id); });
+    var fd = new FormData(); fd.append("c1", c1); fd.append("c2", c2); ids.forEach(function(i){ fd.append("ids", i); });
+    fetch("/book/api/batch_move", { method: "POST", body: fd })
+    .then(function(r){ return r.json(); }).then(function(res){ alert(res.msg); closeBatchMove(); location.reload(); });
+}
+
+// ==================== 上传区 ====================
+function initUploadZone() {
+    var dropZone = document.getElementById('dropZone');
+    var fileInput = document.getElementById('fileInput');
+    if(!dropZone) return;
+    dropZone.addEventListener('click', function(e) { if(e.target !== fileInput) fileInput.click(); });
+    fileInput.addEventListener('change', function(e) { if(e.target.files.length > 0) { handleFiles(e.target.files); fileInput.value = ''; } });
+    ['dragenter','dragover','dragleave','drop'].forEach(function(en) { dropZone.addEventListener(en, function(e) { e.preventDefault(); e.stopPropagation(); }, false); });
+    dropZone.addEventListener('dragenter', function() { dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
+    dropZone.addEventListener('drop', function(e) { dropZone.classList.remove('drag-over'); if(e.dataTransfer.files.length > 0) handleFiles(e.dataTransfer.files); });
+}
+var ALLOWED_EXTS = ['pdf','doc','docx','xls','xlsx','ppt','pptx','zip','rar','7z','txt','csv','log','jpg','jpeg','png','gif','bmp','mp4','avi','mov','dwg','dxf','scl','awl','l5x','step','stp','exe','msi'];
+var MAX_SIZE = 50 * 1024 * 1024;
+function checkFile(file) {
+    var ext = file.name.split('.').pop().toLowerCase();
+    if(!ALLOWED_EXTS.includes(ext)) return { ok: false, msg: "文件类型不允许 (."+ext+")" };
+    if(file.size > MAX_SIZE) return { ok: false, msg: "超过50MB限制" };
+    return { ok: true };
+}
+function handleFiles(files) {
+    var fileArray = Array.from(files);
+    if(fileArray.length === 0) return;
+    var uploadList = document.getElementById('uploadList');
+    var validFiles = [];
+    fileArray.forEach(function(file) {
+        var check = checkFile(file);
+        if(!check.ok) {
+            var div = document.createElement('div'); div.className = 'upload-item';
+            div.innerHTML = '<span class="up-name">'+escapeHtml(file.name)+'</span><span class="up-status error">'+check.msg+'</span>';
+            uploadList.appendChild(div);
+        } else validFiles.push(file);
+    });
+    if(validFiles.length === 0) return;
+    if(validFiles.length === 1) uploadSingleFile(validFiles[0]);
+    else uploadBatchFiles(validFiles);
+}
+function uploadSingleFile(file) {
+    var uploadList = document.getElementById('uploadList');
+    var div = document.createElement('div'); div.className = 'upload-item';
+    div.innerHTML = '<span class="up-name">'+escapeHtml(file.name)+'</span><span class="up-status">上传中...</span>';
+    uploadList.appendChild(div);
+    var fd = new FormData(); fd.append('files', file);
+    var c1 = document.getElementById('selC1').value || '';
+    var c2 = document.getElementById('selC2').value || '';
+    if(c1) fd.append('c1', c1);
+    if(c2) fd.append('c2', c2);
+    fetch('/book/api/upload_only', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); }).then(function(res) {
+        if(res.code === 200 && res.data && res.data.results && res.data.results.length > 0) {
+            var r = res.data.results[0];
+            if(r.code === 200) {
+                div.querySelector('.up-status').className = 'up-status success';
+                div.querySelector('.up-status').textContent = '成功';
+                document.getElementById('bookPath').value = r.path;
+                document.getElementById('bookName').value = file.name.replace(/\.[^/.]+$/, '');
+            } else {
+                div.querySelector('.up-status').className = 'up-status error';
+                div.querySelector('.up-status').textContent = r.msg || '失败';
+            }
+        }
+    });
+}
+function uploadBatchFiles(files) {
+    var uploadList = document.getElementById('uploadList');
+    var itemMap = {};
+    files.forEach(function(file) {
+        var div = document.createElement('div'); div.className = 'upload-item';
+        div.innerHTML = '<span class="up-name">'+escapeHtml(file.name)+'</span><span class="up-status">等待中...</span>';
+        uploadList.appendChild(div); itemMap[file.name] = div;
+    });
+    var fd = new FormData(); files.forEach(function(f){ fd.append('files', f); });
+    var c1 = document.getElementById('selC1').value || '';
+    var c2 = document.getElementById('selC2').value || '';
+    if(c1) fd.append('c1', c1);
+    if(c2) fd.append('c2', c2);
+    fetch('/book/api/upload_only', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); }).then(function(res) {
+        pendingBatchFiles = [];
+        if(res.code === 200 && res.data && res.data.results) {
+            res.data.results.forEach(function(r) {
+                var itemDiv = itemMap[r.name];
+                if(itemDiv) {
+                    if(r.code === 200) {
+                        itemDiv.querySelector('.up-status').className = 'up-status success';
+                        itemDiv.querySelector('.up-status').textContent = '成功';
+                        pendingBatchFiles.push({ name: r.name.replace(/\.[^/.]+$/, ''), path: r.path });
+                    } else {
+                        itemDiv.querySelector('.up-status').className = 'up-status error';
+                        itemDiv.querySelector('.up-status').textContent = r.msg || '失败';
+                    }
+                }
+            });
+            if(pendingBatchFiles.length > 0) openBatchAddDialog();
+        }
+    });
+}
+function openBatchAddDialog() {
+    document.getElementById('batchCount').textContent = pendingBatchFiles.length;
+    var prevC1 = document.getElementById('selC1').value;
+    var prevC2 = document.getElementById('selC2').value;
+    var c1Sel = document.getElementById('batchC1');
+    c1Sel.innerHTML = '';
+    navFirst.forEach(function(n) { if(n === allCat) return; var opt = document.createElement('option'); opt.value = n; opt.innerText = n; c1Sel.appendChild(opt); });
+    if(prevC1 && navFirst.includes(prevC1)) c1Sel.value = prevC1;
+    renderBatchC2();
+    var c2Sel = document.getElementById('batchC2');
+    if(prevC2) { for(var i = 0; i < c2Sel.options.length; i++) { if(c2Sel.options[i].value === prevC2) { c2Sel.value = prevC2; break; } } }
+    var listDiv = document.getElementById('batchFormList');
+    listDiv.innerHTML = '';
+    pendingBatchFiles.forEach(function(f, idx) {
+        var div = document.createElement('div'); div.className = 'batch-form-item';
+        div.innerHTML = '<span class="bf-index">'+(idx+1)+'</span><input type="text" class="bf-name" value="'+escapeHtml(f.name)+'" data-idx="'+idx+'">';
+        listDiv.appendChild(div);
+    });
+    document.getElementById('maskBatchAdd').classList.add('show');
+}
+function renderBatchC2() {
+    var parent = document.getElementById('batchC1').value;
+    var sel = document.getElementById('batchC2'); sel.innerHTML = '';
+    (layoutData[parent] || []).forEach(function(n) { var opt = document.createElement('option'); opt.value = n; opt.innerText = n + " ("+getBookCount(parent, n)+"本)"; sel.appendChild(opt); });
+}
+function closeBatchAdd() { document.getElementById('maskBatchAdd').classList.remove('show'); }
+function submitBatchAdd() {
+    var c1 = document.getElementById('batchC1').value;
+    var c2 = document.getElementById('batchC2').value;
+    if(!c1 || !c2) { alert('请选择分类'); return; }
+    var nameInputs = document.querySelectorAll('.batch-form-item .bf-name');
+    var fd = new FormData(); fd.append('c1', c1); fd.append('c2', c2);
+    var validCount = 0;
+    nameInputs.forEach(function(input) {
+        var idx = parseInt(input.dataset.idx);
+        var name = input.value.trim();
+        var path = pendingBatchFiles[idx].path;
+        if(name) { fd.append('names', name); fd.append('paths', path); validCount++; }
+    });
+    if(validCount === 0) { alert('请至少填写一个资料名称'); return; }
+    fetch('/book/api/book/batchadd', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); }).then(function(res){ alert(res.msg); if(res.code === 200) { closeBatchAdd(); closeBookDialog(); location.reload(); } });
+}
+
+// ==================== 分类树 ====================
+function renderCatTree() { filterCatTree(); }
+function filterCatTree() {
+    var tree = document.getElementById('catTree');
+    if(!tree) return;
+    var kw = document.getElementById('searchCat').value.trim().toLowerCase();
+    tree.innerHTML = '';
+    navFirst.forEach(function(c1, c1Idx) {
+        var c1Match = !kw || c1.toLowerCase().includes(kw);
+        if(!c1Match) {
+            var c2List = layoutData[c1] || [];
+            var hasC2Match = c2List.some(function(c2){ return c2.toLowerCase().includes(kw); });
+            if(!hasC2Match) return;
+        }
+        if(c1 === allCat) return;
+        var c1Id = catIdMap[c1];
+        var c1Color = catColor[c1] || '#6c5ce7';
+        var c1Lvl = CC_CAT1_LEVELS[c1Id] || 'public';
+        var c1LvlText = c1Lvl==='public'?'🟢公开':c1Lvl==='login'?'🔵登录':c1Lvl==='admin'?'🔴管理员':'👤指定';
+        var div1 = document.createElement('div');
+        div1.className = 'cat-tree-item cat-tree-c1';
+        div1.innerHTML =
+            '<span><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:'+c1Color+';margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,0.1);"></span>📁 '+escapeHtml(c1)+'</span>' +
+            '<span style="color:#888;font-size:12px;">('+((layoutData[c1] || []).length)+'个子类)</span>' +
+            '<span class="lvl lvl-'+c1Lvl+'">'+c1LvlText+'</span>' +
+            '<div class="cat-actions">' +
+                '<button class="order-btn" onclick="moveCat(\''+c1Id+'\', \'up\')" title="上移">▲</button><button class="order-btn" onclick="moveCat(\''+c1Id+'\', \'down\')" title="下移">▼</button>' +
+                '<button class="btn-edit-cat" onclick="openEditCat(\''+c1Id+'\', \''+escapeHtml(c1)+'\', \''+c1Color+'\')">编辑</button>' +
+                '<button class="btn-del-cat" onclick="delCat(\''+c1Id+'\', \''+escapeHtml(c1)+'\')">删除</button>' +
+                '<button class="lock-btn" onclick="openLockById(\'cat1\',\''+c1Id+'\',\''+escapeHtml(c1).replace(/'/g,"\\'")+'\')">🔒</button>' +
+                buildQaModeSelect(c1) +
+            '</div>';
+        tree.appendChild(div1);
+        (layoutData[c1] || []).forEach(function(c2, c2Idx) {
+            var c2Id = catIdMap[c2];
+            var c2Color = catColor[c2] || '#6c5ce7';
+            var c2Lvl = CC_CAT2_LEVELS[c2Id] || 'public';
+            var c2LvlText = c2Lvl==='public'?'🟢公开':c2Lvl==='login'?'🔵登录':c2Lvl==='admin'?'🔴管理员':'👤指定';
+            var div2 = document.createElement('div');
+            div2.className = 'cat-tree-item cat-tree-c2';
+            if(c2Color && c2Color.startsWith("#")) { div2.style.background = lighten(c2Color, 0.5); }
+            else { div2.style.background = "#e8ecf2"; }
+            div2.innerHTML =
+                '<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+c2Color+';margin-right:6px;vertical-align:middle;border:1px solid rgba(0,0,0,0.1);"></span>📄 '+escapeHtml(c2)+' ('+getBookCount(c1, c2)+'本)</span>' +
+                '<span class="lvl lvl-'+c2Lvl+'">'+c2LvlText+'</span>' +
+                '<div class="cat-actions">' +
+                    '<button class="order-btn" onclick="moveCat(\''+c2Id+'\', \'up\')" title="上移">▲</button><button class="order-btn" onclick="moveCat(\''+c2Id+'\', \'down\')" title="下移">▼</button>' +
+                    '<button class="btn-edit-cat" onclick="openEditCat(\''+c2Id+'\', \''+escapeHtml(c2)+'\', \''+c2Color+'\')">编辑</button>' +
+                    '<button class="btn-del-cat" onclick="delCat(\''+c2Id+'\', \''+escapeHtml(c2)+'\')">删除</button>' +
+                '<button class="lock-btn" onclick="openLockById(\'cat2\',\''+c2Id+'\',\''+escapeHtml(c2).replace(/'/g,"\\'")+'\')">🔒</button>' +
+                buildQaModeSelect(c1 + '/' + c2) +
+            '</div>';
+            tree.appendChild(div2);
+        });
+    });
+}
+// ============ 分类问答档位 ============
+// 分类只存「档位名」，由档位决定该分类的相关性阈值 min_score 与 OCR 扫描页数；
+// 取值按 单本 qa_mode > cat1/cat2 > cat1 > 全局默认 回落，选「继承」即删除本条配置。
+const CC_QA_LABEL = {'public':'公共档','general':'普通档','precise':'精确档'};
+function buildQaModeSelect(path){
+    var cur = CC_QA_BY_CAT[path] || '';
+    var ms = CC_QA_MIN_SCORE || {};
+    function sc(k, d){ var v = ms[k]; return (v===undefined || v===null) ? d : v; }
+    var inheritTxt = CC_QA_LABEL[CC_QA_DEFAULT] ? ('继承（'+CC_QA_LABEL[CC_QA_DEFAULT]+'）') : '继承';
+    var opts = [
+        ['', inheritTxt],
+        ['public', '公共档 '+sc('public', 0.30)],
+        ['general', '普通档 '+sc('general', 0.40)],
+        ['precise', '精确档 '+sc('precise', 0.45)]
+    ];
+    var html = '<select class="qa-mode-sel" data-path="'+escapeHtml(path)+'" onchange="setCatQaMode(this)" title="问答档位：决定该分类下图书的相关性阈值(min_score)与 OCR 扫描页数">';
+    for(var i=0;i<opts.length;i++){
+        html += '<option value="'+opts[i][0]+'"'+(cur===opts[i][0]?' selected':'')+'>'+opts[i][1]+'</option>';
+    }
+    return html + '</select>';
+}
+function setCatQaMode(sel){
+    var path = sel.getAttribute('data-path');
+    var mode = sel.value;
+    var fd = new FormData();
+    fd.append('cat_path', path);
+    fd.append('mode', mode);
+    fetch('/config/api/ai/set_qa_mode_category', {
+        method:'POST', body:fd, headers:{'X-Requested-With':'XMLHttpRequest'}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+        if(res && res.code === 200){
+            if(mode) { CC_QA_BY_CAT[path] = mode; } else { delete CC_QA_BY_CAT[path]; }
+            alert(res.msg || '已保存');
+        } else {
+            alert((res && res.msg) || '设置失败');
+            location.reload();
+        }
+    })
+    .catch(function(e){ alert('设置失败: '+e); location.reload(); });
+}
+function clearCatFilter() { document.getElementById('searchCat').value = ''; filterCatTree(); }
+function moveCat(catId, direction) {
+    var fd = new FormData(); fd.append('id', catId); fd.append('direction', direction);
+    fetch('/book/api/category/move', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); }).then(function(res){ if(res.code === 200) location.reload(); else alert(res.msg); });
+}
+function openAddC1() { document.getElementById("newC1Name").value = ""; document.getElementById("maskAddC1").classList.add('show'); }
+function closeAddC1() { document.getElementById("maskAddC1").classList.remove('show'); }
+function submitAddC1() {
+    var name = document.getElementById("newC1Name").value.trim();
+    if(!name) { alert("分类名称不能为空"); return; }
+    var fd = new FormData(); fd.append("name", name);
+    fetch("/book/api/category/add", { method: "POST", body: fd })
+    .then(function(r){ return r.json(); }).then(function(res){ alert(res.msg); if(res.code === 200) location.reload(); });
+}
+function openAddC2() { renderSelC1(); document.getElementById("newC2Name").value = ""; document.getElementById("maskAddC2").classList.add('show'); }
+function closeAddC2() { document.getElementById("maskAddC2").classList.remove('show'); }
+function submitAddC2() {
+    var parentName = document.getElementById("parentC2Sel").value;
+    var name = document.getElementById("newC2Name").value.trim();
+    if(!parentName || !name) { alert("参数缺失"); return; }
+    var parentCatId = catIdMap[parentName];
+    var fd = new FormData(); fd.append("parent_id", parentCatId); fd.append("name", name);
+    fetch("/book/api/category/add", { method: "POST", body: fd })
+    .then(function(r){ return r.json(); }).then(function(res){ alert(res.msg); if(res.code === 200) location.reload(); });
+}
+function openEditCat(catId, name, currentColor) {
+    document.getElementById('editCatId').value = catId;
+    document.getElementById('editCatName').value = name;
+    var color = currentColor || '#6c5ce7';
+    document.getElementById('editCatColor').value = color;
+    document.getElementById('editCatColorText').value = color;
+    document.getElementById('editCatColorPreview').style.background = color;
+    renderPresetColors();
+    document.getElementById('maskEditCat').classList.add('show');
+}
+function closeEditCat() { document.getElementById('maskEditCat').classList.remove('show'); }
+function syncColorPicker() {
+    var picker = document.getElementById('editCatColor');
+    var text = document.getElementById('editCatColorText');
+    var preview = document.getElementById('editCatColorPreview');
+    text.value = picker.value;
+    preview.style.background = picker.value;
+}
+function renderPresetColors() {
+    var presetColors = ['#6c5ce7','#e74c3c','#f39c12','#27ae60','#2980b9','#16a085','#8e44ad','#d35400','#2c3e50','#e91e63','#00bcd4','#795548','#9b59b6','#f1c40f','#95a5a6','#ff9800','#3f51b5','#607d8b','#8bc34a','#ff5722'];
+    var container = document.getElementById('presetColors');
+    container.innerHTML = presetColors.map(function(c) {
+        return '<span onclick="selectPresetColor(\''+c+'\')" style="display:inline-block;width:20px;height:20px;border-radius:50%;background:'+c+';cursor:pointer;border:2px solid #fff;box-shadow:0 0 3px rgba(0,0,0,0.2);" title="'+c+'"></span>';
+    }).join('');
+}
+function selectPresetColor(color) {
+    document.getElementById('editCatColor').value = color;
+    document.getElementById('editCatColorText').value = color;
+    document.getElementById('editCatColorPreview').style.background = color;
+}
+function submitEditCat() {
+    var id = document.getElementById('editCatId').value;
+    var name = document.getElementById('editCatName').value.trim();
+    var color = document.getElementById('editCatColor').value;
+    if(!name) { alert('名称不能为空'); return; }
+    var fd = new FormData(); fd.append('id', id); fd.append('name', name); fd.append('color', color);
+    fetch('/book/api/category/edit', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); }).then(function(res){ alert(res.msg); if(res.code === 200) location.reload(); });
+}
+function delCat(catId, name) {
+    if(!confirm('确定删除分类 "'+name+'"？\n该分类下的图书将归入"未分类"。')) return;
+    var fd = new FormData(); fd.append('id', catId);
+    fetch('/book/api/category/delete', { method: 'POST', body: fd })
+    .then(function(r){ return r.json(); }).then(function(res){ alert(res.msg); if(res.code === 200) location.reload(); });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,73 @@
+# ============================================================
+# 全局应用配置
+# ============================================================
+
+app:
+  name: ""
+  host: "0.0.0.0"
+  port: 5005
+  debug: false
+  secret_key: ""        # 建议保持留空；生产环境用环境变量 SECRET_KEY 注入（密钥与代码分离），避免写入配置文件
+  session_lifetime: 518400  # Session过期时间（秒），默认6天
+
+database:
+  path: "book_manager.db"  # 相对于项目根目录
+  wal_mode: true
+  busy_timeout: 5000
+
+uploads:
+  folder: "uploads/books"
+  max_file_size: 20971520  # 20MB
+  allowed_extensions:
+    # 电子书
+    - pdf
+    - epub
+    - mobi
+    - azw
+    - azw3
+    # 办公文档
+    - doc
+    - docx
+    - xls
+    - xlsx
+    - ppt
+    - pptx
+    # 压缩包
+    - zip
+    - rar
+    - "7z"
+    # 文本 / 网页
+    - txt
+    - csv
+    - log
+    - htm
+    - html
+    # 图片
+    - jpg
+    - jpeg
+    - png
+    - gif
+    - bmp
+    # 漫画（按需保留）
+    - cbz
+    - cbr
+    # 视频
+    - mp4
+    - avi
+    - mov
+    # 工程图纸
+    - dwg
+    - dxf
+    - scl
+    - awl
+    - l5x
+    - step
+    - stp
+
+ai:
+  # 如果 modules.yaml 中 ai_center.ai_mode 已设置，则以 modules.yaml 为准
+  # 这里作为默认兜底配置
+  default_mode: "off"
+  models_dir: "models"
+  embedding_model: "bge-small-zh-v1.5"
+  llm_model: "LFM2.5-2.6B-Q4_K_M.gguf"

@@ -1,0 +1,245 @@
+{% extends "layout_base.html" %}
+
+{% block page_title %}权限管理 · 配置中心{% endblock %}
+
+{% block extra_css %}
+<style>
+.bm-ws {
+    min-height: 100%; background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ef 100%);
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    color: #1f2937; display: flex; flex-direction: column; overflow-y: auto;
+}
+.header-top {
+    background: linear-gradient(90deg, #2A4365, #335788); color: #fff;
+    padding: 14px 24px; font-size: 18px; font-weight: bold;
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.back-btn {
+    background: #fff; color: #2A4365; padding: 6px 16px;
+    text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: normal;
+    display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s ease;
+}
+.back-btn:hover { background: #f0f4f8; transform: translateY(-1px); }
+.perm-container { max-width: 1100px; width: 100%; margin: 0 auto; padding: 20px; }
+
+.card { background:#fff; border-radius:8px; padding:16px 18px; margin-bottom:14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.card h3 { color:#2A4365; font-size:15px; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+
+.action-row { display:flex; flex-wrap:wrap; gap:8px; }
+.action-btn {
+    padding:8px 14px; border-radius:5px; cursor:pointer; font-size:13px;
+    border:1px solid transparent; display:inline-flex; align-items:center; gap:5px;
+    background:#2A4365; color:#fff; transition: all 0.2s ease;
+}
+.action-btn:hover { opacity:0.88; }
+.action-btn.success { background:#27ae60; }
+.action-btn.danger { background:#e74c3c; }
+.action-btn.ghost { background:#fff; color:#2A4365; border-color:#cfd8e3; }
+
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:#2A4365; color:#fff; padding:8px 10px; text-align:center; }
+td { padding:7px 10px; text-align:center; border-bottom:1px solid #eee; word-break:break-all; }
+tbody tr:hover { background:#e8f0f8; }
+.table-box { max-height:420px; overflow-y:auto; border:1px solid #eee; border-radius:4px; }
+
+.badge { padding:2px 9px; border-radius:10px; font-size:11px; color:#fff; }
+.lv-public { background:#27ae60; } .lv-login { background:#3498db; }
+.lv-admin { background:#8e44ad; } .lv-selected { background:#e67e22; }
+.tip { color:#888; font-size:11px; margin-top:6px; }
+
+/* 弹窗 */
+.modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.45); display:none; align-items:center; justify-content:center; z-index:2000; }
+.modal-mask.show { display:flex; }
+.modal {
+    background:#fff; border-radius:10px; width:520px; max-width:92vw; max-height:90vh; overflow-y:auto;
+    box-shadow:0 8px 30px rgba(0,0,0,.25); padding:20px 22px;
+}
+.modal h3 { color:#2A4365; margin-bottom:14px; }
+.form-row { margin-bottom:12px; }
+.form-row label { display:block; font-size:13px; color:#445; margin-bottom:5px; font-weight:600; }
+.form-row select, .form-row input {
+    width:100%; padding:9px 10px; border:1px solid #cfd8e3; border-radius:6px; font-size:13px; outline:none;
+}
+.form-row select:focus, .form-row input:focus { border-color:#2A4365; }
+.radio-group { display:flex; flex-wrap:wrap; gap:8px; }
+.radio-group label {
+    flex:1; min-width:120px; border:2px solid #e0e8f2; border-radius:8px; padding:10px; cursor:pointer; text-align:center; font-weight:600; color:#2A4365; background:#f7f9fc;
+}
+.radio-group input { display:none; }
+.radio-group input:checked + span { color:#1f4e8c; }
+.radio-group label:has(input:checked) { border-color:#2A4365; background:#eef3fa; }
+.user-multiselect { width:100%; height:120px; border:1px solid #cfd8e3; border-radius:6px; padding:6px; font-size:13px; }
+.modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+
+.toast { position: fixed; bottom: 30px; right: 30px; padding: 12px 20px; border-radius: 5px;
+    color: white; font-size: 14px; z-index: 9999; opacity:0; transform: translateY(20px); transition: all .3s ease; }
+.toast.show { opacity:1; transform: translateY(0); }
+.toast.success { background:#27ae60; } .toast.error { background:#e74c3c; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bm-ws">
+    <div class="header-top">
+        <span>🔐 权限管理（三层级）</span>
+        <a href="/config" class="back-btn">← 返回配置中心</a>
+    </div>
+
+    <div class="perm-container">
+        <div class="card">
+            <h3>📋 权限规则（一级分类 / 二级分类 / 单本图书）</h3>
+            <div class="action-row" style="margin-bottom:12px;">
+                <button class="action-btn success" onclick="openModal()">➕ 新增规则</button>
+            </div>
+            <div class="table-box">
+                <table>
+                    <thead><tr><th>类型</th><th>资源</th><th>可见级别</th><th>指定用户</th><th>操作</th></tr></thead>
+                    <tbody>
+                        {% for r in rules %}
+                        <tr>
+                            <td>{{ r.type_label }}</td>
+                            <td style="text-align:left;">{{ r.resource_name }}</td>
+                            <td>
+                                {% if r.permission_level == 'public' %}<span class="badge lv-public">公开</span>
+                                {% elif r.permission_level == 'login' %}<span class="badge lv-login">登录可见</span>
+                                {% elif r.permission_level == 'admin' %}<span class="badge lv-admin">仅管理员</span>
+                                {% else %}<span class="badge lv-selected">指定用户</span>{% endif %}
+                            </td>
+                            <td style="text-align:left;">{{ r.allowed_user_names | join(', ') if r.allowed_user_names else '-' }}</td>
+                            <td><button class="action-btn danger" style="padding:4px 10px;font-size:12px;" onclick="delRule('{{ r.resource_type }}','{{ r.resource_id }}')">删除</button></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" style="padding:20px;color:#999;">暂无权限规则，全部默认公开可预览。</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="tip">继承规则：图书的可见性优先取自身规则；若无，则取所属二级分类；再无则取一级分类；都没有即为公开。设为「指定用户」时仅所选用户可见。</div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增规则弹窗 -->
+<div class="modal-mask" id="modalMask">
+    <div class="modal">
+        <h3>➕ 新增权限规则</h3>
+        <div class="form-row">
+            <label>资源类型</label>
+            <select id="selType" onchange="onTypeChange()">
+                <option value="cat1">一级分类</option>
+                <option value="cat2">二级分类</option>
+                <option value="book">单本图书</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label>选择资源</label>
+            <select id="selResource"></select>
+        </div>
+        <div class="form-row">
+            <label>可见级别</label>
+            <div class="radio-group">
+                <label><input type="radio" name="lv" value="public" checked><span>🌐 公开</span></label>
+                <label><input type="radio" name="lv" value="login"><span>🔐 登录可见</span></label>
+                <label><input type="radio" name="lv" value="admin"><span>👑 仅管理员</span></label>
+                <label><input type="radio" name="lv" value="selected"><span>👥 指定用户</span></label>
+            </div>
+        </div>
+        <div class="form-row" id="userBox" style="display:none;">
+            <label>指定用户（可多选）</label>
+            <select id="selUsers" class="user-multiselect" multiple></select>
+        </div>
+        <div class="modal-actions">
+            <button class="action-btn ghost" onclick="closeModal()">取消</button>
+            <button class="action-btn success" onclick="saveRule()">💾 保存</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CAT1 = {{ cat1_list | tojson }};
+const CAT2 = {{ cat2_list | tojson }};
+const BOOKS = {{ books | tojson }};
+const USERS = {{ users | tojson }};
+
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.className = 'toast show ' + (type || 'info');
+    setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
+function openModal() {
+    document.getElementById('modalMask').classList.add('show');
+    onTypeChange();
+    document.querySelector('input[name="lv"][value="public"]').checked = true;
+    document.getElementById('userBox').style.display = 'none';
+}
+function closeModal() { document.getElementById('modalMask').classList.remove('show'); }
+
+function onTypeChange() {
+    const type = document.getElementById('selType').value;
+    let list = [];
+    if (type === 'cat1') list = CAT1;
+    else if (type === 'cat2') list = CAT2;
+    else list = BOOKS;
+    const sel = document.getElementById('selResource');
+    sel.innerHTML = '';
+    list.forEach(function (o) {
+        const opt = document.createElement('option');
+        opt.value = o.id; opt.textContent = o.name || o.id;
+        sel.appendChild(opt);
+    });
+    // 指定用户下拉
+    const us = document.getElementById('selUsers');
+    us.innerHTML = '';
+    USERS.forEach(function (u) {
+        const opt = document.createElement('option');
+        opt.value = u.id; opt.textContent = (u.name || u.account || u.id);
+        us.appendChild(opt);
+    });
+}
+
+document.querySelectorAll('input[name="lv"]').forEach(function (el) {
+    el.addEventListener('change', function () {
+        document.getElementById('userBox').style.display = (this.value === 'selected') ? 'block' : 'none';
+    });
+});
+
+async function saveRule() {
+    const type = document.getElementById('selType').value;
+    const rid = document.getElementById('selResource').value;
+    const level = document.querySelector('input[name="lv"]:checked').value;
+    let allowed = [];
+    if (level === 'selected') {
+        const sel = document.getElementById('selUsers');
+        allowed = Array.from(sel.selectedOptions).map(function (o) { return o.value; });
+        if (!allowed.length) { showToast('指定用户可见时至少选择一名用户', 'error'); return; }
+    }
+    try {
+        const resp = await fetch('/config/api/permission/save', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ permissions: [{ resource_type: type, resource_id: rid, permission_level: level, allowed_users: allowed }] }),
+        });
+        const data = await resp.json();
+        if (data.code === 200) { showToast(data.msg || '已保存', 'success'); setTimeout(function(){ location.reload(); }, 1000); }
+        else showToast('保存失败：' + (data.msg || '未知错误'), 'error');
+    } catch (e) { showToast('网络错误：' + e.message, 'error'); }
+}
+
+async function delRule(type, rid) {
+    if (!confirm('确定删除该权限规则？删除后该资源恢复默认公开继承。')) return;
+    try {
+        const resp = await fetch('/config/api/permission/delete', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resource_type: type, resource_id: rid }),
+        });
+        const data = await resp.json();
+        if (data.code === 200) { showToast('已删除', 'success'); setTimeout(function(){ location.reload(); }, 800); }
+        else showToast('删除失败：' + (data.msg || ''), 'error');
+    } catch (e) { showToast('网络错误：' + e.message, 'error'); }
+}
+</script>
+{% endblock %}

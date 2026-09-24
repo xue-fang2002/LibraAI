@@ -1,0 +1,21 @@
+{% extends "layout_base.html" %}
+{% block page_title %}无权访问{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='ai_staff/staff.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="staff-wrap">
+  <div class="staff-head">
+    <div class="staff-title">🤖 AI 员工</div>
+  </div>
+  <div class="staff-chat">
+    <div class="staff-empty">
+      {{ reason or "你当前没有「AI 员工」模块的访问权限。" }}<br>
+      该模块默认仅管理员可用（module_access 中 ai_staff = admin）。<br>
+      需要开通请让管理员到「配置中心 → 模块访问权限」里添加。
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "layout_base.html" %}
+{% block page_title %}反馈详情{% endblock %}
+{% block content %}
+{% set type_label = {'bug':'🐞 问题','suggestion':'💡 建议','idea':'✨ 想法'}.get(item.type, item.type) %}
+{% set status_label = {'pending':'待处理','acknowledged':'已受理','in_progress':'处理中','resolved':'已解决','closed':'已关闭'}.get(item.status, item.status) %}
+{% set priority_label = {'low':'低','medium':'中','high':'高'}.get(item.priority, item.priority) %}
+<div class="feedback-page">
+  <a href="{{ url_for('feedback.index') }}" class="fb-btn">← 返回</a>
+
+  <div class="fb-detail" data-item-id="{{ item.id }}">
+    <div class="fb-detail-head">
+      <span class="fb-type fb-type-{{ item.type }}">{{ type_label }}</span>
+      <h3 class="fb-detail-title">{{ item.title }}</h3>
+    </div>
+    <div class="fb-card-meta">
+      {{ status_label }} · 优先级{{ priority_label }}
+      {% if item.module %} · 关联：{{ item.module }}{% endif %}
+      · 提交人：{{ item.author_nickname or item.author_account }}
+      · {{ item.created_at }}
+    </div>
+    <div class="fb-card-content">{{ item.content }}</div>
+
+    {% if item.dev_reply %}
+    <div class="fb-devreply">
+      <div class="fb-devreply-label">👨‍💻 开发者回复（{{ item.dev_reply_at }}）</div>
+      <div class="fb-devreply-text">{{ item.dev_reply }}</div>
+    </div>
+    {% endif %}
+
+    {% if is_admin %}
+    <div class="fb-admin-box">
+      <div class="fb-admin-row">
+        <label>状态</label>
+        <select class="fb-select fb-sel-status" data-item="{{ item.id }}">
+          <option value="pending" {% if item.status=='pending' %}selected{% endif %}>待处理</option>
+          <option value="acknowledged" {% if item.status=='acknowledged' %}selected{% endif %}>已受理</option>
+          <option value="in_progress" {% if item.status=='in_progress' %}selected{% endif %}>处理中</option>
+          <option value="resolved" {% if item.status=='resolved' %}selected{% endif %}>已解决</option>
+          <option value="closed" {% if item.status=='closed' %}selected{% endif %}>已关闭</option>
+        </select>
+        <label>优先级</label>
+        <select class="fb-select fb-sel-priority" data-item="{{ item.id }}">
+          <option value="low" {% if item.priority=='low' %}selected{% endif %}>低</option>
+          <option value="medium" {% if item.priority=='medium' %}selected{% endif %}>中</option>
+          <option value="high" {% if item.priority=='high' %}selected{% endif %}>高</option>
+        </select>
+      </div>
+      <div class="fb-admin-row">
+        <textarea class="fb-reply-input" data-item="{{ item.id }}" rows="3"
+                  placeholder="填写开发者回复（提交后自动置为「已受理」）">{{ item.dev_reply or '' }}</textarea>
+      </div>
+      <div class="fb-admin-row">
+        <button class="fb-btn-primary fb-reply-btn" data-item="{{ item.id }}" type="button">回复并受理</button>
+        <span class="fb-admin-msg" id="fbAdminMsg"></span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

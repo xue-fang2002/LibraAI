@@ -1,0 +1,134 @@
+/* ============================================================
+   图书馆系列页面 · 新拟态主题（图书馆 / 我的私有图书 / 图书详情 共用）
+   - 基底 #eaf0f6（比工具箱的 #e0e5ec 稍亮，图书馆专用更清爽）
+   - 彩色只作点缀：分类色降饱和用于按钮底、10% tint 用于表格行 + 左侧 3px 实色条
+   - 暗色由 body.dark 切换（layout_base.js 控制），此处统一适配
+   作用域：变量名 --neu-* 为图书馆专用，不与全局冲突
+   ============================================================ */
+:root {
+    /* 基底：淡蓝灰（呼应图书馆原有的蓝色系，比中性灰更有辨识度） */
+    --neu-bg: #e9eff8;
+    --neu-bg-2: #f3f8fd;
+    /* 强调区背景（header / 二级栏 / 面板）：再深一档的淡蓝，制造层次 */
+    --neu-bg-accent: #dde9f7;
+    --neu-shadow-dark: #c2d0e4;
+    --neu-shadow-dark-2: #b7c9df;   /* 配合 accent 底的凸起阴影 */
+    --neu-shadow-light: #ffffff;
+    --neu-text: #2b3a4f;
+    --neu-text-sub: #64748b;
+    --neu-accent: #2A4365;
+    --neu-accent-soft: rgba(42, 67, 101, 0.10);
+    --neu-border: rgba(255, 255, 255, 0.7);
+    --neu-tint-alpha: 0.10;
+    /* 工具栏按钮（搜索 / 个人视图入口）底色：暗色下提亮一档，避免「黑色按钮」观感 */
+    --neu-btn-bg: var(--neu-bg);
+    /* 品牌蓝色阶：header 最深 → 一级分类次之 → 二级分类走淡彩分类色 */
+    --neu-brand-deep: #2A4365;              /* 标题栏深蓝 */
+    --neu-brand-deep-shadow: #1b2c45;
+    --neu-brand-deep-light: #3d5c8a;
+    --neu-brand-mid: #46648f;               /* 一级分类中蓝（比深蓝淡一档） */
+    --neu-brand-mid-shadow: #2f4767;
+    --neu-brand-mid-light: #5d80b3;
+    --neu-on-brand: #ffffff;                /* 品牌蓝底上的文字色 */
+    /* 搜索/一级分类这一整行（nav-top-bar）的背景：只比标题栏深蓝淡一档 */
+    --neu-toolbar: #3a5680;
+    /* 一级分类栏：蓝色背景区（内凹托盘），按钮本身用中性新拟态而非实色蓝 */
+    --neu-c1-zone: #bcd6f3;                 /* 一级分类栏蓝色背景区（更蓝一档） */
+}
+
+body.dark {
+    /* 暗色同样偏蓝，保持图书馆气质 */
+    --neu-bg: #181c24;
+    --neu-bg-2: #1f242e;
+    --neu-bg-accent: #20262f;
+    --neu-shadow-dark: #0d1014;
+    --neu-shadow-dark-2: #080a0d;
+    --neu-shadow-light: #262c37;
+    --neu-text: #d8e2ee;
+    --neu-text-sub: #8b98a8;
+    --neu-accent: #82aede;
+    --neu-accent-soft: rgba(130, 174, 222, 0.16);
+    --neu-border: rgba(255, 255, 255, 0.06);
+    --neu-tint-alpha: 0.20;
+    /* 暗色下按钮底色：比基底 #181c24 亮一档的 slate，并配更亮的浅阴影使其读起来是「凸起」而非黑块 */
+    --neu-btn-bg: #2b3441;
+    /* 暗色下的品牌蓝：整体压暗，但仍保留蓝色阶层次 */
+    --neu-brand-deep: #22334d;
+    --neu-brand-deep-shadow: #121b29;
+    --neu-brand-deep-light: #33496c;
+    --neu-brand-mid: #2c3f5c;
+    --neu-brand-mid-shadow: #1a2637;
+    --neu-brand-mid-light: #3d5678;
+    --neu-on-brand: #e6eef8;
+    /* 暗色下 toolbar 行：比标题栏(#22334d)淡一档的中蓝 */
+    --neu-toolbar: #2b3e5c;
+    /* 暗色下的一级分类栏：深蓝托盘，按钮仍是中性暗底 */
+    --neu-c1-zone: #172a47;                 /* 暗色下深蓝托盘 */
+}
+
+/* ---------- 基础形态 ---------- */
+/* 外凸面板 */
+.neu-raised {
+    background: var(--neu-bg);
+    box-shadow: 5px 5px 10px var(--neu-shadow-dark),
+                -5px -5px 10px var(--neu-shadow-light);
+}
+/* 内凹容器（表格区、输入区、结果区） */
+.neu-inset {
+    background: var(--neu-bg);
+    box-shadow: inset 4px 4px 8px var(--neu-shadow-dark),
+                inset -4px -4px 8px var(--neu-shadow-light);
+}
+
+/* ---------- 按钮 / 胶囊 ---------- */
+.neu-pill {
+    background: var(--neu-bg);
+    color: var(--neu-text);
+    border: 1px solid var(--neu-border);
+    border-radius: 10px;
+    box-shadow: 3px 3px 7px var(--neu-shadow-dark),
+                -3px -3px 7px var(--neu-shadow-light);
+    transition: box-shadow 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+.neu-pill:hover { color: var(--neu-accent); }
+/* 激活态 = 按下 = 内凹（新拟态惯例） */
+.neu-pill.active,
+.neu-pill:active {
+    box-shadow: inset 3px 3px 6px var(--neu-shadow-dark),
+                inset -3px -3px 6px var(--neu-shadow-light);
+    color: var(--neu-accent);
+}
+
+/* ---------- 输入框 ---------- */
+.neu-input {
+    background: var(--neu-bg);
+    color: var(--neu-text);
+    border: 1px solid var(--neu-border);
+    outline: none;
+    box-shadow: inset 3px 3px 6px var(--neu-shadow-dark),
+                inset -3px -3px 6px var(--neu-shadow-light);
+}
+.neu-input::placeholder { color: var(--neu-text-sub); }
+.neu-input:focus { border-color: var(--neu-accent-soft); }
+
+/* ---------- 表格 ---------- */
+/* 行背景由 JS 写入分类色 tint，此处只提供过渡与左侧色条挂载 */
+.neu-row { transition: background 0.18s ease; }
+
+/* 小标签（内凹胶囊） */
+.neu-tag {
+    background: var(--neu-bg);
+    color: var(--neu-text-sub);
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-size: 12px;
+    box-shadow: inset 2px 2px 4px var(--neu-shadow-dark),
+                inset -2px -2px 4px var(--neu-shadow-light);
+}
+
+/* 分割线（极淡，替代原来的实色 2px 线） */
+.neu-divider {
+    height: 1px;
+    background: var(--neu-shadow-dark);
+    opacity: 0.35;
+}
